@@ -1,12 +1,11 @@
 import 'dart:collection';
 import 'dart:math';
 
+import '../internal/priority_queue.dart';
 import '../model/roles.dart';
 import 'order.dart';
 import 'walk_control.dart';
 import 'walk_metadata.dart';
-
-part '_priority_queue.dart';
 
 // =============================================================================
 // WALKS
@@ -270,7 +269,7 @@ T bestFirstFold<N, E, T>(
   required int Function(int nodeId) scoredBy,
   required (WalkControl, T) Function(T acc, int nodeId) folder,
 }) {
-  final pq = _PriorityQueue<(int, int)>((a, b) => a.$1.compareTo(b.$1))
+  final pq = PriorityQueue<(int, int)>((a, b) => a.$1.compareTo(b.$1))
     ..push((scoredBy(from), from));
 
   final visited = <int>{};
@@ -391,7 +390,7 @@ List<int>? lexicographicalTopologicalSort<N, E>(
     for (final id in graph.nodeIds) id: graph.inDegree(id),
   };
 
-  final pq = _PriorityQueue<int>((a, b) {
+  final pq = PriorityQueue<int>((a, b) {
     final da = graph.nodeData(a);
     final db = graph.nodeData(b);
     // If either node has no data, fall back to ID comparison.

@@ -1,16 +1,16 @@
-part of 'traversal.dart';
-
-/// Internal binary-min-heap priority queue.
+/// Generic binary-min-heap priority queue.
 ///
-/// Generic over [T] so it can store `(score, nodeId)` pairs for best-first
-/// search or raw node IDs for lexicographical topological sort.
-class _PriorityQueue<T> {
+/// [T] is the element type. [compare] defines the ordering:
+/// negative if a < b, zero if equal, positive if a > b.
+class PriorityQueue<T> {
   final List<T> _heap = [];
   final int Function(T a, T b) _compare;
 
-  _PriorityQueue(this._compare);
+  PriorityQueue(this._compare);
 
+  bool get isEmpty => _heap.isEmpty;
   bool get isNotEmpty => _heap.isNotEmpty;
+  int get length => _heap.length;
 
   void push(T value) {
     _heap.add(value);
@@ -45,7 +45,8 @@ class _PriorityQueue<T> {
     while (index < halfLength) {
       var child = index * 2 + 1;
       final right = child + 1;
-      if (right < _heap.length && _compare(_heap[right], _heap[child]) < 0) {
+      if (right < _heap.length &&
+          _compare(_heap[right], _heap[child]) < 0) {
         child = right;
       }
       if (_compare(value, _heap[child]) <= 0) break;
