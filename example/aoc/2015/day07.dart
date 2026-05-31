@@ -64,41 +64,32 @@ void main() async {
     final expr = parts[0].trim();
     final dest = parts[1].trim();
 
-    GateInstruction instruction;
-    if (expr.startsWith('NOT ')) {
-      final arg = expr.substring(4).trim();
-      instruction = GateInstruction('NOT', [arg]);
-      _addDependencyEdge(builder, arg, dest);
-    } else if (expr.contains(' AND ')) {
-      final subParts = expr.split(' AND ');
-      final arg1 = subParts[0].trim();
-      final arg2 = subParts[1].trim();
-      instruction = GateInstruction('AND', [arg1, arg2]);
-      _addDependencyEdge(builder, arg1, dest);
-      _addDependencyEdge(builder, arg2, dest);
-    } else if (expr.contains(' OR ')) {
-      final subParts = expr.split(' OR ');
-      final arg1 = subParts[0].trim();
-      final arg2 = subParts[1].trim();
-      instruction = GateInstruction('OR', [arg1, arg2]);
-      _addDependencyEdge(builder, arg1, dest);
-      _addDependencyEdge(builder, arg2, dest);
-    } else if (expr.contains(' LSHIFT ')) {
-      final subParts = expr.split(' LSHIFT ');
-      final arg = subParts[0].trim();
-      final shift = subParts[1].trim();
-      instruction = GateInstruction('LSHIFT', [arg, shift]);
-      _addDependencyEdge(builder, arg, dest);
-    } else if (expr.contains(' RSHIFT ')) {
-      final subParts = expr.split(' RSHIFT ');
-      final arg = subParts[0].trim();
-      final shift = subParts[1].trim();
-      instruction = GateInstruction('RSHIFT', [arg, shift]);
-      _addDependencyEdge(builder, arg, dest);
-    } else {
-      // Direct assignment of integer or wire
-      instruction = GateInstruction('ASSIGN', [expr]);
-      _addDependencyEdge(builder, expr, dest);
+    final GateInstruction instruction;
+    final exprParts = expr.split(' ');
+
+    switch (exprParts) {
+      case ['NOT', final arg]:
+        instruction = GateInstruction('NOT', [arg]);
+        _addDependencyEdge(builder, arg, dest);
+      case [final arg1, 'AND', final arg2]:
+        instruction = GateInstruction('AND', [arg1, arg2]);
+        _addDependencyEdge(builder, arg1, dest);
+        _addDependencyEdge(builder, arg2, dest);
+      case [final arg1, 'OR', final arg2]:
+        instruction = GateInstruction('OR', [arg1, arg2]);
+        _addDependencyEdge(builder, arg1, dest);
+        _addDependencyEdge(builder, arg2, dest);
+      case [final arg, 'LSHIFT', final shift]:
+        instruction = GateInstruction('LSHIFT', [arg, shift]);
+        _addDependencyEdge(builder, arg, dest);
+      case [final arg, 'RSHIFT', final shift]:
+        instruction = GateInstruction('RSHIFT', [arg, shift]);
+        _addDependencyEdge(builder, arg, dest);
+      case [final value]:
+        instruction = GateInstruction('ASSIGN', [value]);
+        _addDependencyEdge(builder, value, dest);
+      default:
+        throw FormatException('Unknown gate expression: $expr');
     }
 
     instructions[dest] = instruction;
