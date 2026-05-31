@@ -1,9 +1,14 @@
+import 'graph_kind.dart';
+
 /// Minimal contract for any structure that can be walked as a graph.
 ///
 /// Implementations promise only the ability to enumerate node IDs and
 /// discover outgoing neighbors.  No query or mutation methods are required.
 /// This is the smallest interface that BFS/DFS traversal needs.
 abstract interface class Traversable {
+  /// Whether edges are treated as directed or undirected.
+  GraphKind get kind;
+
   /// All node identifiers currently in the graph.
   Iterable<Object> get nodeIds;
 

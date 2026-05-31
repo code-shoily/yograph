@@ -23,6 +23,7 @@ class SimpleGraph<N, E>
         WeightedWalkable<N, E>,
         Bidirectional<N, E>,
         Mutable<N, E> {
+  @override
   final GraphKind kind;
 
   final Map<Object, N?> _nodes = {};

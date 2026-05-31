@@ -93,8 +93,7 @@ void main() {
     });
 
     test('removeEdge removes directed edge', () {
-      final g = SimpleGraph<String, int>.directed()
-        ..addEdge('A', 'B');
+      final g = SimpleGraph<String, int>.directed()..addEdge('A', 'B');
       g.removeEdge('A', 'B');
       expect(g.hasEdge('A', 'B'), isFalse);
       expect(g.edgeCount, 0);
@@ -178,8 +177,7 @@ void main() {
     });
 
     test('removeEdge removes both directions', () {
-      final g = SimpleGraph<String, int>.undirected()
-        ..addEdge('A', 'B');
+      final g = SimpleGraph<String, int>.undirected()..addEdge('A', 'B');
       g.removeEdge('A', 'B');
       expect(g.hasEdge('A', 'B'), isFalse);
       expect(g.hasEdge('B', 'A'), isFalse);
@@ -207,8 +205,7 @@ void main() {
     });
 
     test('remove undirected self-loop', () {
-      final g = SimpleGraph<String, int>.undirected()
-        ..addEdge('A', 'A');
+      final g = SimpleGraph<String, int>.undirected()..addEdge('A', 'A');
       g.removeEdge('A', 'A');
       expect(g.hasEdge('A', 'A'), isFalse);
       expect(g.edgeCount, 0);

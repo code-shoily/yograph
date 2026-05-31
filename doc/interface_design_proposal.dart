@@ -293,10 +293,14 @@ class SingleMapGraph<N, E>
   }
 
   @override
-  void removeNode(Object id) {/* ... */}
+  void removeNode(Object id) {
+    /* ... */
+  }
 
   @override
-  void removeEdge(Object from, Object to) {/* ... */}
+  void removeEdge(Object from, Object to) {
+    /* ... */
+  }
 }
 
 // =============================================================================
