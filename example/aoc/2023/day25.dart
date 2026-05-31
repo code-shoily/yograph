@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:yograph/yograph.dart';
+import '../aoc_helper.dart';
 
 // Sample input from AoC 2023 Day 25 problem description
 const sampleInput = '''
@@ -21,29 +21,11 @@ frs: qnr lhk lsr
 void main() async {
   print('=== ADVENT OF CODE 2023 - DAY 25: SNOWVERLOAD ===\n');
 
-  // 1. Load the puzzle input (fall back to sample if file doesn't exist)
-  String? rawInput;
-  final envSrc = Platform.environment['AOC_INPUT_SRC'];
-  if (envSrc != null && envSrc.isNotEmpty) {
-    final envFile = File('$envSrc/2023_25.txt');
-    if (await envFile.exists()) {
-      print('Reading puzzle input from environment source: ${envFile.path}');
-      rawInput = await envFile.readAsString();
-    }
-  }
-
-  if (rawInput == null) {
-    final localFile = File('example/aoc/2023/inputs/day25.txt');
-    if (await localFile.exists()) {
-      print('Reading puzzle input from local source: ${localFile.path}');
-      rawInput = await localFile.readAsString();
-    }
-  }
-
-  final input = rawInput ?? sampleInput;
-  if (rawInput == null) {
-    print('No input file found. Using sample input instead...');
-  }
+  final (input, _) = await loadInput(
+    year: 2023,
+    day: 25,
+    sampleInput: sampleInput,
+  );
 
   // 2. Build the undirected graph
   // We use LabeledBuilder so we can parse String component names (like "jqt", "rhn")

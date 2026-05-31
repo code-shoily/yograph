@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:yograph/yograph.dart';
+import '../aoc_helper.dart';
 
 // Sample input from AoC 2024 Day 23 problem description
 const sampleInput = '''
@@ -55,30 +55,11 @@ de-ot
 void main() async {
   print('=== ADVENT OF CODE 2024 - DAY 23: LAN PARTY ===\n');
 
-  // 1. Load the puzzle input (fall back to sample if file doesn't exist)
-  String? rawInput;
-  final envSrc = Platform.environment['AOC_INPUT_SRC'];
-  if (envSrc != null && envSrc.isNotEmpty) {
-    final envFile = File('$envSrc/2024_23.txt');
-    if (await envFile.exists()) {
-      print('Reading puzzle input from environment source: ${envFile.path}');
-      rawInput = await envFile.readAsString();
-    }
-  }
-
-  if (rawInput == null) {
-    final localFile = File('example/aoc/2024/inputs/day23.txt');
-    if (await localFile.exists()) {
-      print('Reading puzzle input from local source: ${localFile.path}');
-      rawInput = await localFile.readAsString();
-    }
-  }
-
-  final input = rawInput ?? sampleInput;
-  final isSample = rawInput == null;
-  if (isSample) {
-    print('No input file found. Using sample input instead...');
-  }
+  final (input, _) = await loadInput(
+    year: 2024,
+    day: 23,
+    sampleInput: sampleInput,
+  );
 
   // 2. Parse the connections and build the undirected graph
   final builder = LabeledBuilder<String, Null>.undirected();

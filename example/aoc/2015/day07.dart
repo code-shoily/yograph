@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:yograph/yograph.dart';
+import '../aoc_helper.dart';
 
 // Sample input from AoC 2015 Day 7 problem description
 const sampleInput = '''
@@ -26,30 +26,11 @@ class GateInstruction {
 void main() async {
   print('=== ADVENT OF CODE 2015 - DAY 7: SOME ASSEMBLY REQUIRED ===\n');
 
-  // 1. Load the puzzle input (fall back to sample if file doesn't exist)
-  String? rawInput;
-  final envSrc = Platform.environment['AOC_INPUT_SRC'];
-  if (envSrc != null && envSrc.isNotEmpty) {
-    final envFile = File('$envSrc/2015_7.txt');
-    if (await envFile.exists()) {
-      print('Reading puzzle input from environment source: ${envFile.path}');
-      rawInput = await envFile.readAsString();
-    }
-  }
-
-  if (rawInput == null) {
-    final localFile = File('example/aoc/2015/inputs/day07.txt');
-    if (await localFile.exists()) {
-      print('Reading puzzle input from local source: ${localFile.path}');
-      rawInput = await localFile.readAsString();
-    }
-  }
-
-  final input = rawInput ?? sampleInput;
-  final isSample = rawInput == null;
-  if (isSample) {
-    print('No input file found. Using sample input instead...');
-  }
+  final (input, isSample) = await loadInput(
+    year: 2015,
+    day: 7,
+    sampleInput: sampleInput,
+  );
 
   // 2. Parse the instructions and build the dependency graph
   // We use LabeledBuilder to map wire labels (e.g. "x", "a") to integer node IDs.
