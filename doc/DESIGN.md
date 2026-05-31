@@ -25,16 +25,49 @@ Build the most comprehensive graph theory library for Dart and Flutter. Pure Dar
 
 ## 2. Core Data Model
 
-### 2.1 `Graph<N, E>`
+### 2.1 Philosophy: Capability Interfaces
 
-Dual-indexed adjacency list — directly ported from YogEx's `%Yog.Graph{}`.
+Unlike YogEx, which tied every algorithm to a single `%Yog.Graph{}` struct, Yograph uses **fine-grained capability interfaces**. Algorithms declare the *minimum* contract they need, not a concrete class.
+
+**Why?** It lets us swap storage backends without touching algorithm code:
+- `SimpleGraph<N, E>` — dual-map adjacency list (YogEx-style, full capabilities)
+- `SingleMapGraph<N, E>` — out-edges only (lighter, for DAGs/trees)
+- `MatrixGraph<N, E>` — dense adjacency matrix (fast edge-weight queries)
+- Future: FFI-backed graph, lazy proxy graph, etc.
+
+Dart does **not** support intersection types in generic bounds (`T extends A & B`), so we define **combined "role" interfaces** that group the capabilities algorithms need:
 
 ```dart
-class Graph<N, E> {
-  final GraphKind kind;                    // directed or undirected
-  final Map<Object, N> nodes;              // node_id => node_data
-  final Map<Object, Map<Object, E>> outEdges;  // node_id => {neighbor_id => edge_data}
-  final Map<Object, Map<Object, E>> inEdges;   // node_id => {neighbor_id => edge_data}
+// Base capabilities
+abstract interface class Traversable { ... }
+abstract interface class Queryable<N, E> { ... }
+abstract interface class Reversible<E> implements Traversable { ... }
+abstract interface class Mutable<N, E> implements Traversable, Queryable<N, E> { ... }
+
+// Combined roles — these are the algorithm parameter types
+abstract interface class Walkable<N, E> implements Traversable, Queryable<N, E> {}
+abstract interface class WeightedWalkable<N, E> implements Traversable, Queryable<N, E> {}
+abstract interface class Bidirectional<N, E> implements Traversable, Reversible<E>, Queryable<N, E> {}
+```
+
+**Compile-time safety example:**
+```dart
+final dag = SingleMapGraph<String, int>();          // out-edges only
+dijkstra(dag, 'A', 'B');                            // ✅ compiles — needs Walkable only
+betweenness(dag);                                    // ❌ COMPILE ERROR — needs Bidirectional
+```
+
+### 2.2 `SimpleGraph<N, E>` — Dual-Indexed Adjacency List
+
+The default implementation, directly ported from YogEx's `%Yog.Graph{}`.
+
+```dart
+class SimpleGraph<N, E> implements Walkable<N, E>, WeightedWalkable<N, E>, Bidirectional<N, E>, Mutable<N, E> {
+  final GraphKind kind;
+  final Map<Object, N?> _nodes = {};
+  final Map<Object, Map<Object, E?>> _out = {};
+  final Map<Object, Map<Object, E?>> _in = {};
+  int _edgeCount = 0;
 }
 ```
 
@@ -44,20 +77,20 @@ class Graph<N, E> {
 | Transpose | O(V + E) | O(1) — swap maps |
 | Predecessors | O(V + E) scan | O(1) lookup |
 | In-degree | O(V + E) scan | O(1) — `inEdges[id].length` |
-| Edge count (undirected) | O(V + E) | O(V) — sum `outEdges` values, adjust for self-loops |
+| Edge count (undirected) | O(V + E) | O(1) — tracked counter |
 
 **Node ID type:** `Object` (anything with `==` and `hashCode`). Common: `String`, `int`.
 
-### 2.2 Immutability vs. Mutability
+### 2.3 Immutability vs. Mutability
 
 **Decision:** Mutable by default, with optional copy-on-write variants.
 
 ```dart
 // Mutable (default) — idiomatic Dart
-final graph = Graph<String, int>.directed()
+final graph = SimpleGraph<String, int>.directed()
   ..addNode('A', data: 'Start')
   ..addNode('B', data: 'End')
-  ..addEdge('A', 'B', weight: 10);
+  ..addEdge('A', 'B', data: 10);
 
 // Immutable variant — returns new Graph
 final graph2 = graph.addedNode('C', data: 'Middle'); // graph is unchanged
@@ -65,55 +98,73 @@ final graph2 = graph.addedNode('C', data: 'Middle'); // graph is unchanged
 
 Rationale: Dart OOP is overwhelmingly mutable. The `..` cascade operator makes fluent building ergonomic. We offer `addedNode`, `addedEdge`, etc. as immutable alternatives where needed.
 
-### 2.3 Result Types
+### 2.4 Result Types
 
 Algorithms return structured result objects rather than raw collections:
 
 ```dart
 // Pathfinding
 final path = Pathfinding.dijkstra(graph, from: 'A', to: 'B');
-print(path.nodes);     // ['A', 'C', 'B']
-print(path.weight);    // 15
-print(path.algorithm); // Algorithm.dijkstra
+print(path.nodes);   // ['A', 'C', 'B']
+print(path.weight);  // 15
 
 // Centrality
 final scores = Centrality.betweenness(graph);
-print(scores['A']);    // 0.42
+print(scores['A']);  // 0.42
 
 // Community detection
 final communities = Community.louvain(graph);
-print(communities.assignments);      // {'A': 0, 'B': 0, 'C': 1}
-print(communities.numCommunities);   // 2
+print(communities.assignments);     // {'A': 0, 'B': 0, 'C': 1}
+print(communities.numCommunities);  // 2
 ```
 
 ---
 
 ## 3. Module Architecture
 
-Each YogEx module maps to a Dart static utility class or extension:
+### 3.1 Core Model (`lib/src/model/`)
 
-| YogEx Module | Dart Class/Namespace | Status |
-|-------------|---------------------|--------|
-| `Yog` (facade) | `Graph` constructors + top-level helpers | ⬜ Not started |
-| `Yog.Graph` | `Graph<N, E>` class | ⬜ Not started |
-| `Yog.Model` | `Graph<N, E>` methods (`addNode`, `addEdge`, etc.) | ⬜ Not started |
-| `Yog.Pathfinding` | `Pathfinding` static class | ⬜ Not started |
-| `Yog.Centrality` | `Centrality` static class | ⬜ Not started |
-| `Yog.Connectivity` | `Connectivity` static class | ⬜ Not started |
-| `Yog.Community` | `Community` static class | ⬜ Not started |
-| `Yog.Traversal` | `Traversal` static class | ⬜ Not started |
-| `Yog.Generator.Classic` | `Generator` static class | ⬜ Not started |
-| `Yog.Generator.Random` | `Generator` static class | ⬜ Not started |
-| `Yog.Operation` | `GraphOperations` static class | ⬜ Not started |
-| `Yog.Transform` | `GraphTransform` static class | ⬜ Not started |
-| `Yog.DAG` | `DagGraph<N, E>` wrapper class | ⬜ Not started |
-| `Yog.IO.JSON` | `GraphJson` static class | ⬜ Not started |
-| `Yog.Render.DOT` | `DotRenderer` static class | ⬜ Not started |
-| `Yog.Render.Mermaid` | `MermaidRenderer` static class | ⬜ Not started |
-| `Yog.Multi` | `MultiGraph<N, E>` class | ⬜ Not started |
-| `Yog.Matching` | `Matching` static class | ⬜ Not started |
-| `Yog.Flow` | `Flow` static class | ⬜ Not started |
-| `Yog.MST` | `MST` static class | ⬜ Not started |
+| File | Content | Status |
+|------|---------|--------|
+| `graph_kind.dart` | `GraphKind` enum | ✅ |
+| `traversable.dart` | `Traversable` interface | ✅ |
+| `queryable.dart` | `Queryable<N, E>` interface | ✅ |
+| `reversible.dart` | `Reversible<E>` interface | ✅ |
+| `mutable.dart` | `Mutable<N, E>` interface | ✅ |
+| `roles.dart` | Combined roles: `Walkable`, `WeightedWalkable`, `Bidirectional` | ✅ |
+
+### 3.2 Implementations (`lib/src/`)
+
+| File | Content | Status |
+|------|---------|--------|
+| `simple_graph.dart` | `SimpleGraph<N, E>` — dual-map, full capabilities | ✅ |
+
+### 3.3 Algorithm Modules
+
+Each YogEx module maps to a Dart static utility class:
+
+| YogEx Module | Dart Class/Namespace | Parameter Type | Status |
+|-------------|---------------------|----------------|--------|
+| `Yog` (facade) | `yograph` library exports | — | ✅ v0.1 |
+| `Yog.Graph` | `SimpleGraph<N, E>` | concrete | ✅ |
+| `Yog.Model` | `Traversable`, `Queryable`, etc. | interfaces | ✅ |
+| `Yog.Pathfinding` | `Pathfinding` static class | `WeightedWalkable` | ⬜ |
+| `Yog.Centrality` | `Centrality` static class | `Walkable` / `Bidirectional` | ⬜ |
+| `Yog.Connectivity` | `Connectivity` static class | `Bidirectional` | ⬜ |
+| `Yog.Community` | `Community` static class | `Walkable` | ⬜ |
+| `Yog.Traversal` | `Traversal` static class | `Walkable` | ⬜ |
+| `Yog.Generator.Classic` | `Generator` static class | returns `SimpleGraph` | ⬜ |
+| `Yog.Generator.Random` | `Generator` static class | returns `SimpleGraph` | ⬜ |
+| `Yog.Operation` | `GraphOperations` static class | `Bidirectional` | ⬜ |
+| `Yog.Transform` | `GraphTransform` static class | `Mutable` / `Bidirectional` | ⬜ |
+| `Yog.DAG` | `DagGraph<N, E>` wrapper | `Walkable` | ⬜ |
+| `Yog.IO.JSON` | `GraphJson` static class | `Traversable` | ⬜ |
+| `Yog.Render.DOT` | `DotRenderer` static class | `Traversable` | ⬜ |
+| `Yog.Render.Mermaid` | `MermaidRenderer` static class | `Traversable` | ⬜ |
+| `Yog.Multi` | `MultiGraph<N, E>` class | own interfaces | ⬜ |
+| `Yog.Matching` | `Matching` static class | `Bidirectional` | ⬜ |
+| `Yog.Flow` | `Flow` static class | `Bidirectional` | ⬜ |
+| `Yog.MST` | `MST` static class | `WeightedWalkable` | ⬜ |
 
 ---
 
@@ -416,14 +467,16 @@ final scores = await Centrality.closeness(graph);  // internally uses Isolate.ru
 
 ```dart
 // Node data type N, edge data type E
-Graph<String, int> graph = Graph.directed();
+final graph = SimpleGraph<String, int>.directed();
 graph.addNode('A', data: 'Start Node');
-graph.addEdge('A', 'B', weight: 10);
+graph.addEdge('A', 'B', data: 10);
 
-// Unweighted graph: use `Null` or `bool` for E
-Graph<String, Null> unweighted = Graph.undirected();
-unweighted.addEdge('A', 'B');  // weight is null/omitted
+// Unweighted graph: use `Null` for E
+final unweighted = SimpleGraph<String, Null>.undirected();
+unweighted.addEdge('A', 'B');  // data is null, weight defaults to 1.0
 ```
+
+**Edge weight derivation:** `edgeWeight(from, to)` checks if edge data implements `num` and extracts the value; otherwise returns `1.0`. For custom weight schemes, algorithms will accept an optional `double Function(E)? weightFn` parameter.
 
 ### 6.4 Enums
 
@@ -563,14 +616,16 @@ GraphBrowser(
 ## 10. Roadmap
 
 ### Phase 1 — Core + Pathfinding (v0.1)
-- [ ] `Graph<N, E>` class with dual-indexed adjacency list
-- [ ] Builder API: `addNode`, `addEdge`, `removeNode`, `removeEdge`
-- [ ] Query API: `successors`, `predecessors`, `neighbors`, `degree`
-- [ ] `Path` result class
+- [x] Capability interfaces: `Traversable`, `Queryable`, `Reversible`, `Mutable`
+- [x] Combined roles: `Walkable`, `WeightedWalkable`, `Bidirectional`
+- [x] `SimpleGraph<N, E>` with dual-indexed adjacency list
+- [x] Builder API: `addNode`, `addEdge`, `removeNode`, `removeEdge`
+- [x] Query API: `successors`, `predecessors`, `neighbors`, `degree`
+- [x] `Path` result class
 - [ ] Dijkstra (with `MinHeap`)
 - [ ] BFS/DFS traversal
 - [ ] Topological sort (Kahn's)
-- [ ] Tests for all above
+- [x] Tests for core graph operations
 
 ### Phase 2 — Connectivity + Components (v0.2)
 - [ ] Tarjan SCC
@@ -626,13 +681,13 @@ GraphBrowser(
 
 | Feature | YogEx (Elixir) | Yograph (Dart) | Status |
 |--------|---------------|----------------|--------|
-| Graph struct | `%Yog.Graph{kind, nodes, out_edges, in_edges}` | `Graph<N, E>` | ⬜ |
+| Graph struct | `%Yog.Graph{kind, nodes, out_edges, in_edges}` | `SimpleGraph<N, E>` | ✅ |
 | Immutable by default | Yes (functional updates) | No (mutable by default, immutable variants available) | ⬜ |
 | Error handling | `{:ok, _} / {:error, _}` tuples | Exceptions + nullable returns | ⬜ |
 | Pipeline operator | `\|>` | `..` cascade + method chaining | ⬜ |
 | Parallelism | `Task.async_stream` | `Future.wait` + `Isolate.run` | ⬜ |
 | Native acceleration | Zig NIFs via `zigler` | `dart:ffi` (v2 only) | ⬜ |
-| Protocols | `Enumerable`, `Inspect` | `Iterable`, `toString()` | ⬜ |
+| Protocols | `Enumerable`, `Inspect` | Capability interfaces (`Traversable`, `Walkable`, `Bidirectional`) | ✅ |
 | Pairing heap | `Yog.PairingHeap` | Port from `algorithms-in-dart` `MinHeap` | ⬜ |
 | Disjoint set | `Yog.DisjointSet` | New implementation | ⬜ |
 
@@ -640,22 +695,19 @@ GraphBrowser(
 
 ## 12. Open Questions
 
-1. **Should we use a custom `Result<T>` type?** Dart doesn't have built-in Result. Options:
-   - Throw exceptions (most idiomatic)
-   - Return nullable (`Path?`)
-   - Custom `Result<T, E>` class (most explicit, least idiomatic)
-   - **Current leaning:** Exceptions for errors, nullable for "not found".
+1. **Should we use a custom `Result<T>` type?**
+   - **Resolved:** Exceptions for programmer errors, nullable returns for "not found".
 
 2. **Node ID type: `Object` or generic `ID extends Object`?**
-   - `Object` is simpler but loses type safety on algorithm inputs.
-   - `ID extends Object` is more type-safe but adds generic noise.
-   - **Current leaning:** `Graph<N, E>` with `Object` IDs. A separate `Graph<ID, N, E>` could be added later.
+   - **Resolved:** `Object` IDs. Interfaces and `SimpleGraph` use `Object` for node IDs. Type safety on node/edge *data* is provided by generics `N` and `E`.
 
 3. **Should `addEdge` auto-create missing nodes?**
-   - YogEx has both `add_edge` (strict) and `add_edge_ensure` (auto-creates).
-   - **Current leaning:** Yes, `addEdge` auto-creates by default (convenient). `addEdgeStrict` throws if nodes missing.
+   - **Resolved:** Yes, `addEdge` auto-creates by default (YogEx `add_edge_ensure` behaviour). Callers who need strictness can check `hasNode` first.
 
-4. **Package structure: monolithic or multi-package?**
+4. **Single interface vs. multiple capability interfaces?**
+   - **Resolved:** Multiple fine-grained capability interfaces (`Traversable`, `Queryable`, `Reversible`, `Mutable`) + combined role interfaces (`Walkable`, `WeightedWalkable`, `Bidirectional`). Algorithms declare minimum requirements via role interfaces.
+
+5. **Package structure: monolithic or multi-package?**
    - Option A: Single `yograph` package with everything.
    - Option B: `yograph_core` + `yograph_flutter`.
    - **Current leaning:** Single package for v0.x. Split only if Flutter widgets bloat the dependency tree.
