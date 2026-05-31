@@ -75,41 +75,20 @@ void main() async {
   print('Total falling bytes listed: ${byteCoords.length}');
 
   // ===========================================================================
-  // Part 1: shortest path after first N bytes have fallen
+  // Part 1: shortest path after first N bytes have fallen (Implicit A*)
   // ===========================================================================
-  final gridPart1 = List.generate(size, (_) => List.filled(size, '.'));
-  for (var i = 0; i < part1BytesCount; i++) {
-    final (x, y) = byteCoords[i];
-    gridPart1[y][x] = '#';
-  }
-
-  final gridGraphPart1 = _buildGridGraph(gridPart1);
-  final startNode = gridGraphPart1.coordToId(0, 0);
-  final endNode = gridGraphPart1.coordToId(size - 1, size - 1);
-
-  // A* Search using a Manhattan distance heuristic
-  double heuristic(int node, int goal) {
-    final (r1, c1) = gridGraphPart1.idToCoord(node);
-    final (r2, c2) = gridGraphPart1.idToCoord(goal);
-    return ((r1 - r2).abs() + (c1 - c2).abs()).toDouble();
-  }
+  final corruptedPart1 = byteCoords.take(part1BytesCount).toSet();
 
   final stopwatchPart1 = Stopwatch()..start();
-  final path = AStar.aStar(
-    gridGraphPart1.toGraph(),
-    startNode,
-    endNode,
-    heuristic: heuristic,
-  );
+  final resultPart1 = _findPath(size, corruptedPart1);
   stopwatchPart1.stop();
 
-  if (path == null) {
+  if (resultPart1 == null) {
     print('⚠️ Part 1: No path found!');
   } else {
-    final steps = path.nodes.length - 1;
     print('Part 1 computed in ${stopwatchPart1.elapsedMilliseconds} ms.');
     print('🎯 Part 1 Result:');
-    print('  Shortest path steps: $steps\n');
+    print('  Shortest path steps: ${resultPart1.toInt()}\n');
   }
 
   // ===========================================================================
@@ -124,37 +103,16 @@ void main() async {
 
   while (low <= high) {
     final mid = (low + high) ~/ 2;
+    final corrupted = byteCoords.take(mid + 1).toSet();
 
-    // Build grid up to mid index
-    final grid = List.generate(size, (_) => List.filled(size, '.'));
-    for (var i = 0; i <= mid; i++) {
-      final (x, y) = byteCoords[i];
-      grid[y][x] = '#';
-    }
+    final cost = _findPath(size, corrupted);
 
-    final gridGraph = _buildGridGraph(grid);
-    final start = gridGraph.coordToId(0, 0);
-    final end = gridGraph.coordToId(size - 1, size - 1);
-
-    double localHeuristic(int node, int goal) {
-      final (r1, c1) = gridGraph.idToCoord(node);
-      final (r2, c2) = gridGraph.idToCoord(goal);
-      return ((r1 - r2).abs() + (c1 - c2).abs()).toDouble();
-    }
-
-    final testPath = AStar.aStar(
-      gridGraph.toGraph(),
-      start,
-      end,
-      heuristic: localHeuristic,
-    );
-
-    if (testPath == null) {
-      // Path is blocked! This mid index could be the first blocker, or the blocker is earlier.
+    if (cost == null) {
+      // Path is blocked! Move left to see if there is an earlier blocker.
       firstBlockingIndex = mid;
       high = mid - 1;
     } else {
-      // Path still exists. The blocker must fall later.
+      // Path still exists. The blocker falls later.
       low = mid + 1;
     }
   }
@@ -172,11 +130,36 @@ void main() async {
   }
 }
 
-GridGraph<String, double> _buildGridGraph(List<List<String>> grid) {
-  return GridBuilder.from2DListWithTopology<String>(
-    grid,
-    GridTopologies.rook,
-    topologyName: 'rook',
-    canMove: (fromCell, toCell) => toCell != '#',
+/// Runs implicit A* on the grid space without building any graph representation.
+double? _findPath(int size, Set<(int, int)> corrupted) {
+  final target = size - 1;
+
+  Iterable<((int, int), double)> successors((int x, int y) pos) {
+    final next = <((int, int), double)>[];
+    for (final (dx, dy) in const [(-1, 0), (1, 0), (0, -1), (0, 1)]) {
+      final nx = pos.$1 + dx;
+      final ny = pos.$2 + dy;
+      if (nx >= 0 && nx <= target && ny >= 0 && ny <= target) {
+        if (!corrupted.contains((nx, ny))) {
+          next.add(((nx, ny), 1.0));
+        }
+      }
+    }
+    return next;
+  }
+
+  bool isGoal((int, int) pos) => pos.$1 == target && pos.$2 == target;
+
+  double heuristic((int, int) pos) {
+    return ((pos.$1 - target).abs() + (pos.$2 - target).abs()).toDouble();
+  }
+
+  final result = AStar.implicitAStar<(int, int)>(
+    from: (0, 0),
+    successors: successors,
+    isGoal: isGoal,
+    heuristic: heuristic,
   );
+
+  return result?.$2;
 }
