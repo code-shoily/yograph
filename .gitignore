@@ -9,3 +9,6 @@ pubspec.lock
 # Test coverage results
 coverage/
 
+# Scratch files
+bin/*.dart
+
