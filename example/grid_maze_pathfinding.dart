@@ -1,7 +1,7 @@
 import 'package:yograph/yograph.dart';
 
 void main() {
-  print('=== GRID MAZE PATHFINDING WITH A* & MANHATTAN HEURISTIC ===\n');
+  print('=== GRID MAZE PATHFINDING WITH A* & PREMIUM UNICODE RENDERING ===\n');
 
   // Define a 2D ASCII maze layout:
   // 'S': Start
@@ -16,12 +16,8 @@ void main() {
     ['.', '.', '.', '.', '.', '.', 'E'],
   ];
 
-  print('Original Maze Map:');
-  _printMaze(mazeLayout);
-  print('');
-
   // 1. Build a GridGraph representing this maze
-  // Movement is Cardinal only (Rook topology: Up, Down, Left, Right).
+  // Movement is Cardinal only (Rook topology).
   // A cell can only connect if it is walkable (either '.', 'S', or 'E').
   final gridGraph = GridBuilder.from2DList(
     mazeLayout,
@@ -41,11 +37,30 @@ void main() {
   final startCoord = gridGraph.idToCoord(startId);
   final endCoord = gridGraph.idToCoord(endId);
 
+  // Map initial occupants to render the original maze
+  final initialOccupants = <int, String>{};
+  for (int r = 0; r < gridGraph.rows; r++) {
+    for (int c = 0; c < gridGraph.cols; c++) {
+      final id = gridGraph.coordToId(r, c);
+      final value = gridGraph.getCell(r, c);
+      if (value == '#') {
+        initialOccupants[id] = '█'; // Solid block for walls
+      } else if (value == 'S' || value == 'E') {
+        initialOccupants[id] = value!;
+      }
+    }
+  }
+
+  print('Original Maze Map (Unicode Box-Drawing):');
+  print(
+    AsciiRenderer.gridToStringUnicode(gridGraph, occupants: initialOccupants),
+  );
+  print('');
+
   print('Start Point: ID $startId at coordinate $startCoord');
   print('End Point:   ID $endId at coordinate $endCoord\n');
 
   // 3. Compute the shortest path using A* Pathfinding
-  // We use Manhattan distance as our perfect heuristic for cardinal movements!
   final pathResult = Pathfinding.shortestPath(
     gridGraph.toGraph(),
     startId,
@@ -65,26 +80,16 @@ void main() {
   print('Path Length (Edge Cost): ${pathResult.weight}');
   print('Path Node Sequence: ${pathResult.nodes}\n');
 
-  // 4. Render the solution path overlaying it back on the 2D layout
-  final solvedMaze = List.generate(
-    mazeLayout.length,
-    (r) => List.of(mazeLayout[r]),
-  );
-
-  // Mark A* path nodes with '*' (except start and end)
+  // 4. Render the solution path overlaying it back on the grid
+  final solvedOccupants = Map<int, String>.of(initialOccupants);
   for (final nodeId in pathResult.nodes) {
     if (nodeId != startId && nodeId != endId) {
-      final (r, c) = gridGraph.idToCoord(nodeId);
-      solvedMaze[r][c] = '*';
+      solvedOccupants[nodeId] = '●'; // Dot representing the path steps
     }
   }
 
-  print('Solved Maze (Path marked with *):');
-  _printMaze(solvedMaze);
-}
-
-void _printMaze(List<List<String>> map) {
-  for (final row in map) {
-    print('  ${row.join(' ')}');
-  }
+  print('Solved Maze (Path steps marked with ●):');
+  print(
+    AsciiRenderer.gridToStringUnicode(gridGraph, occupants: solvedOccupants),
+  );
 }

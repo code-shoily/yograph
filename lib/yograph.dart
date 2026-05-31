@@ -57,3 +57,6 @@ export 'src/simple_graph.dart';
 export 'src/builder/labeled_builder.dart';
 export 'src/builder/grid_graph.dart';
 export 'src/builder/grid_builder.dart';
+
+// Rendering
+export 'src/render/ascii.dart';
