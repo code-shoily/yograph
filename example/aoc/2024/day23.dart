@@ -1,7 +1,6 @@
 import 'package:yograph/yograph.dart';
 import '../aoc_helper.dart';
 
-// Sample input from AoC 2024 Day 23 problem description
 const sampleInput = '''
 kh-tc
 qp-kh
@@ -53,38 +52,29 @@ de-ot
 ''';
 
 void main() async {
-  print('=== ADVENT OF CODE 2024 - DAY 23: LAN PARTY ===\n');
-
   final (input, _) = await loadInput(
     year: 2024,
     day: 23,
     sampleInput: sampleInput,
   );
+  final graph = parse(input);
+  final (p1, p2) = solve(graph);
+  print('($p1, $p2)');
+}
 
-  // 2. Parse the connections and build the undirected graph
+SimpleGraph<String, Null> parse(String input) {
   final builder = LabeledBuilder<String, Null>.undirected();
-
   final lines = input.trim().split('\n');
   for (final line in lines) {
     if (line.trim().isEmpty) continue;
-
     final parts = line.split('-');
     builder.addEdge(parts[0].trim(), parts[1].trim());
   }
+  return builder.toGraph() as SimpleGraph<String, Null>;
+}
 
-  final graph = builder.toGraph() as SimpleGraph<String, Null>;
-  print(
-    'Constructed Graph: ${graph.nodeCount} computers, ${graph.edgeCount} connection edges.\n',
-  );
-
-  // ===========================================================================
-  // Part 1: Find all 3-cliques where at least one computer starts with 't'
-  // ===========================================================================
-  print('Finding all 3-cliques (triangles)...');
-  final stopwatchPart1 = Stopwatch()..start();
+(int, String) solve(SimpleGraph<String, Null> graph) {
   final cliques3 = Clique.kCliques(graph, 3);
-  stopwatchPart1.stop();
-
   var countPart1 = 0;
   for (final clique in cliques3) {
     final names = clique.map((id) => graph.nodeData(id)!).toList();
@@ -92,25 +82,9 @@ void main() async {
       countPart1++;
     }
   }
-
-  print('Part 1 computed in ${stopwatchPart1.elapsedMilliseconds} ms.');
-  print('🎯 Part 1 Result:');
-  print('  Number of 3-cliques containing a "t" node: $countPart1\n');
-
-  // ===========================================================================
-  // Part 2: Find the maximum clique (alphabetically sorted password)
-  // ===========================================================================
-  print('Computing Maximum Clique (Bron-Kerbosch)...');
-  final stopwatchPart2 = Stopwatch()..start();
   final maxCliqueSet = Clique.maxClique(graph);
-  stopwatchPart2.stop();
-
   final maxCliqueNames = maxCliqueSet.map((id) => graph.nodeData(id)!).toList()
     ..sort();
   final password = maxCliqueNames.join(',');
-
-  print('Part 2 computed in ${stopwatchPart2.elapsedMilliseconds} ms.');
-  print('🎯 Part 2 Result:');
-  print('  Maximum Clique Size: ${maxCliqueNames.length}');
-  print('  Alphabetically Sorted Password: $password');
+  return (countPart1, password);
 }
