@@ -1,0 +1,2 @@
+# Exclude large puzzle inputs and AoC solutions from pub.dev packaging
+example/aoc/
