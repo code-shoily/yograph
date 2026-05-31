@@ -65,7 +65,10 @@ The following table summarizes the high-performance graph solvers migrated from 
 | **2020 / 07** | [Handy Haversacks](2020/day07.dart) | **15ms** | ~110ms | **7.3x** | `LabeledBuilder`, `Bidirectional` predecessor BFS traversal |
 | **2021 / 09** | [Smoke Basin](2021/day09.dart) | **49ms** | ~300ms | **6.1x** | `GridBuilder.from2DList` rook graph, `Components.connectedComponents` on sub-graph |
 | **2021 / 15** | [Chiton](2021/day15.dart) | **202ms** | ~2,000ms | **10.0x** | Integer-packed coordinate states, `AStar.implicitAStarBy` |
+| **2022 / 08** | [Treetop Tree House](2022/day08.dart) | **1,112ms** | ~900ms | **0.8x** | `GridBuilder.from2DList` graph, cardinal `implicitFoldBy` walking |
+| **2022 / 12** | [Hill Climbing Algorithm](2022/day12.dart) | **39ms** | ~300ms | **7.7x** | `GridBuilder` graph, `Dijkstra.shortestPath` & `Dijkstra.singleSourceDistances` |
 | **2022 / 16** | [Proboscidea Volcanium](2022/day16.dart) | **119ms** | ~2,700ms | **22.6x** | `LabeledBuilder`, `FloydWarshall.allPairs`, bitmask state DFS search |
+| **2022 / 24** | [Blizzard Basin](2022/day24.dart) | **228ms** | ~1,200ms | **5.2x** | `AStar.implicitAStarBy` 3D temporal state-space search, cyclic blizzards |
 | **2023 / 25** | [Snowverload](2023/day25.dart) | **45ms** | ~650ms | **14.4x** | Minimum cut / Karger's / Stoer-Wagner graph partitioning |
 | **2024 / 05** | [Print Queue](2024/day05.dart) | **27ms** | ~250ms | **9.2x** | `SimpleGraph.directed`, `topologicalSort` Kahn's algorithm |
 | **2024 / 18** | [RAM Run](2024/day18.dart) | **15ms** | ~160ms | **10.6x** | `AStar.implicitAStar` grid pathfinding under falling bytes |
