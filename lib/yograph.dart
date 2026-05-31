@@ -41,6 +41,12 @@ export 'src/property/clique.dart';
 export 'src/property/cyclicity.dart';
 export 'src/property/eulerian.dart';
 
+// Network Flows
+export 'src/flow/max_flow_result.dart';
+export 'src/flow/min_cut_result.dart';
+export 'src/flow/max_flow.dart';
+export 'src/flow/min_cut.dart';
+
 // Connectivity
 export 'src/connectivity/connectivity.dart';
 
@@ -49,3 +55,5 @@ export 'src/simple_graph.dart';
 
 // Builders
 export 'src/builder/labeled_builder.dart';
+export 'src/builder/grid_graph.dart';
+export 'src/builder/grid_builder.dart';

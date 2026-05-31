@@ -12,3 +12,9 @@
 - Add Centrality algorithms: Degree, Closeness, Harmonic, Betweenness, Pagerank, Eigenvector, Katz, and Hits.
 - Add health metrics: Diameter, Local efficiency, and Average local efficiency.
 - Add connectivity algorithms: Bridges and articulation points.
+
+## 0.2.0 - Flows & Grids
+
+- Add Max-Flow algorithms: Edmonds-Karp, Dinic, and Push-Relabel.
+- Add Min-Cut algorithms: s-t Min-Cut and global Min-Cut.
+- Add `GridBuilder` and `GridGraph` classes for working with 2D grid structures.

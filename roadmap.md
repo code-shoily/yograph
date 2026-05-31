@@ -107,13 +107,15 @@ Our goal is systematic functional parity with identical modular structures and r
 
 ---
 
-## 7. Network Flows & Cuts 🔴 *(Upcoming)*
+## 7. Network Flows & Cuts
 | Algorithm | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
-| **Edmonds-Karp** | `Yog.Flow.MaxFlow` | - | `[ ]` |
-| **Dinic's** | `Yog.Flow.MaxFlow` | - | `[ ]` |
+| **Edmonds-Karp** | `Yog.Flow.MaxFlow` | `MaxFlow.edmondsKarp` | `[x]` |
+| **Dinic's** | `Yog.Flow.MaxFlow` | `MaxFlow.dinic` | `[x]` |
+| **Push-Relabel** | `Yog.Flow.MaxFlow` | `MaxFlow.pushRelabel` | `[x]` |
 | **Successive Shortest Path** | `Yog.Flow.SuccessiveShortestPath`| - | `[ ]` |
-| **Stoer-Wagner** | `Yog.Flow.MinCut` | - | `[ ]` |
+| **Stoer-Wagner** | `Yog.Flow.MinCut` | `MinCut.globalMinCut` | `[x]` |
+| **s-t Min-Cut** | `Yog.Flow.MinCut` | `MinCut.stMinCut` | `[x]` |
 
 ---
 
@@ -136,3 +138,11 @@ Our goal is systematic functional parity with identical modular structures and r
 | **Disjoint Set** | `Yog.DisjointSet` | `DisjointSet` | `[x]` |
 | **Priority Queue** | `Yog.PairingHeap` | `PriorityQueue` (heap-backed) | `[x]` |
 | **HyperLogLog** | `Reachability.HLL` | - | `[ ]` |
+
+---
+
+## 10. Builders & Generators
+| Builder / Generator | Elixir Module | Dart Support | Status |
+| :--- | :--- | :--- | :---: |
+| **Labeled Graph Builder** | `Yog.Builder.Labeled` | `LabeledBuilder` | `[x]` |
+| **2D Grid Graph Builder** | `Yog.Builder.Grid` / `GridGraph` | `GridBuilder` / `GridGraph` | `[x]` |
