@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Get all staged Dart files (excluding deleted ones)
+staged_files=$(git diff --cached --name-only --diff-filter=d | grep '\.dart$')
+
+# If no staged Dart files, proceed with the commit
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+echo "✨ Formatting staged Dart files..."
+for file in $staged_files; do
+  if [ -f "$file" ]; then
+    dart format "$file"
+    git add "$file"
+  fi
+done
+echo "✅ Formatted staged files successfully!"
+
+echo "🔍 Running dart analyze..."
+if ! dart analyze; then
+  echo "❌ dart analyze failed! Please fix the issues before committing."
+  exit 1
+fi
+
+echo "🚀 Analysis passed! Proceeding with commit..."
+exit 0

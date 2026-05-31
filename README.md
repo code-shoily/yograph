@@ -230,6 +230,16 @@ dart analyze --fatal-infos
 dart format --output=none --set-exit-if-changed .
 ```
 
+### Git Pre-Commit Hook
+
+This repository includes a shared Git pre-commit hook that automatically formats all staged `.dart` files and runs `dart analyze` before allowing any commit to succeed.
+
+To enable the pre-commit hook in your local clone, run:
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ### Project Structure
 
 - `lib/src/model/` — Capability interfaces (`Traversable`, `Queryable`, `Mutable`, `Reversible`, `Bidirectional`)
