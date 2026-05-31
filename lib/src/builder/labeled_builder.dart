@@ -14,8 +14,8 @@ import '../simple_graph.dart';
 ///
 /// By default [LabeledBuilder] wraps a [SimpleGraph], but it can target
 /// **any** graph implementation that implements [Mutable] via the [on]
-/// factory.  This lets you use [LabeledBuilder] with [SingleMapGraph],
-/// custom mutable wrappers, or future graph variants without modification.
+/// factory.  This lets you use [LabeledBuilder] with custom mutable wrappers,
+/// or future graph variants without modification.
 ///
 /// ```dart
 /// // Default: build on a SimpleGraph
@@ -26,7 +26,7 @@ import '../simple_graph.dart';
 /// final graph = builder.toGraph(); // returns Mutable<String, double>
 ///
 /// // Custom: build on any Mutable implementation
-/// final custom = SingleMapGraph<String, int>();
+/// final custom = SimpleGraph<String, int>.directed();
 /// final customBuilder = LabeledBuilder<String, int>.on(custom)
 ///   ..addEdge('A', 'B');
 /// ```
@@ -47,8 +47,8 @@ class LabeledBuilder<L, E> {
 
   /// Build on an existing [Mutable] graph implementation.
   ///
-  /// This allows you to use [LabeledBuilder] with [SingleMapGraph],
-  /// copy-on-write wrappers, or any future mutable variant.
+  /// This allows you to use [LabeledBuilder] with copy-on-write wrappers,
+  /// or any future mutable variant.
   factory LabeledBuilder.on(Mutable<L, E> graph) => LabeledBuilder._(graph);
 
   /// Gets or creates a node ID for the given [label].
@@ -90,7 +90,8 @@ class LabeledBuilder<L, E> {
   int? getId(L label) => _labelToId[label];
 
   /// All labels currently known to the builder, in ID order.
-  Iterable<L> get labels => _graph.nodeIds.map((id) => _graph.nodeData(id)!);
+  Iterable<L> get labels =>
+      _graph.nodeIds.map((id) => _graph.nodeData(id)).whereType<L>();
 
   /// Number of nodes created so far.
   int get nodeCount => _graph.nodeCount;
