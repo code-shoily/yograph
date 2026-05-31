@@ -81,10 +81,11 @@ abstract final class Clique {
     if (k <= 0) return [];
     if (graph.kind != GraphKind.undirected) return [];
     final nodes = graph.nodeIds.toList()..sort();
-    if (k == 1)
+    if (k == 1) {
       return [
         for (final u in nodes) {u},
       ];
+    }
 
     final adj = <int, Set<int>>{
       for (final u in nodes) u: graph.successors(u).toSet(),
