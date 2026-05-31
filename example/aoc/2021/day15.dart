@@ -20,8 +20,11 @@ void main() async {
     day: 15,
     sampleInput: sampleInput,
   );
+  final stopwatch = Stopwatch()..start();
   final (p1, p2) = solve(input, isSample);
+  stopwatch.stop();
   print('($p1, $p2)');
+  print('Solved in ${stopwatch.elapsedMilliseconds}ms');
 }
 
 (int, int) solve(String rawInput, bool isSample) {
