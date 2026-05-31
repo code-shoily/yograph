@@ -52,7 +52,9 @@ The following table summarizes the high-performance graph solvers migrated from 
 | **2015 / 09** | [All in a Single Night](2015/day09.dart) | **<10ms** | ~100ms | **>10.0x** | `LabeledBuilder`, Floyd-Warshall TSP / Hamiltonian path |
 | **2015 / 13** | [Knights of the Dinner Table](2015/day13.dart) | **<10ms** | ~120ms | **>12.0x** | `LabeledBuilder`, Seating Arrangement TSP / Hamiltonian cycle |
 | **2015 / 22** | [Wizard Simulator 20XX](2015/day22.dart) | **45ms** | ~400ms | **8.8x** | Implicit graph Dijkstra state-space search |
+| **2016 / 11** | [Radioisotope Generators](2016/day11.dart) | **146ms** | ~2,000ms | **13.7x** | `AStar.implicitAStarBy` state-space search, symmetry pruning |
 | **2016 / 13** | [A Maze of Twisty Little Cubes](2016/day13.dart) | **<10ms** | ~90ms | **>9.0x** | Implicit BFS pathfinding on coordinate grid |
+| **2016 / 24** | [Air Duct Spelunking](2016/day24.dart) | **57ms** | ~1,000ms | **17.5x** | `GridBuilder.from2DList` rook graph, `Dijkstra.singleSourceDistances`, TSP search |
 | **2017 / 07** | [Recursive Circus](2017/day07.dart) | **13ms** | ~120ms | **9.2x** | `LabeledBuilder`, Arborescence tree balancing search |
 | **2017 / 12** | [Digital Plumber](2017/day12.dart) | **<10ms** | ~95ms | **>9.5x** | `SimpleGraph`, `Components.connectedComponents` |
 | **2017 / 14** | [Disk Defragmentation](2017/day14.dart) | **52ms** | ~300ms | **5.7x** | Knot Hash, `SimpleGraph` undirected connected components |
