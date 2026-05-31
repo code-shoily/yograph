@@ -15,6 +15,12 @@ export 'src/model/roles.dart';
 // Result types
 export 'src/path.dart';
 
+// Traversal
+export 'src/traversal/order.dart';
+export 'src/traversal/walk_control.dart';
+export 'src/traversal/walk_metadata.dart';
+export 'src/traversal/traversal.dart';
+
 // Implementations
 export 'src/simple_graph.dart';
 
