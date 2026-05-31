@@ -52,14 +52,38 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 
 ### Connectivity & Structure
 
-**Minimum Spanning Tree** — `MST.kruskal()`, `MST.prim()`, min/max variants  
-**Disjoint Set** — `DisjointSet` with path compression and union by rank
+**Connected Components** — `Components.connectedComponents()`, `Components.weaklyConnectedComponents()`  
+**Strongly Connected Components** — `SCC.tarjan()`, `SCC.kosaraju()`  
+**Bridge & Articulation Point Detection** — `Analysis.analyze()`  
+**K-Core Decomposition** — `KCore.detect()`, `KCore.coreNumbers()`, `KCore.degeneracy()`  
+**Reachability Counts** — `Reachability.counts()` with DAG fast-path + SCC condensation fallback  
+**Structural Predicates** — `Structure.isTree()`, `Structure.isChordal()`, `Structure.isArborescence()`, `Structure.isComplete()`, `Structure.isRegular()`
+
+### Centrality
+
+**Degree** — `Centrality.degree()` with `DegreeMode` (in / out / total)  
+**Distance-Based** — `Centrality.closeness()`, `Centrality.harmonic()`, `Centrality.betweenness()` (Brandes' algorithm)  
+**Spectral / Iterative** — `Centrality.pageRank()`, `Centrality.eigenvector()`, `Centrality.katz()`, `Centrality.alpha()`  
+**Link-Analysis** — `Centrality.hits()` (hub & authority scores)
+
+### Health & Quality Metrics
+
+**Distance Metrics** — `Health.diameter()`, `Health.radius()`, `Health.eccentricity()`  
+**Structural** — `Health.assortativity()` (Pearson degree correlation)  
+**Path Metrics** — `Health.averagePathLength()`  
+**Efficiency** — `Health.globalEfficiency()`, `Health.localEfficiency()`, `Health.averageLocalEfficiency()`
+
+### Minimum Spanning Tree
+
+**Kruskal** — `MST.kruskal()`, `MST.kruskalMax()`  
+**Prim** — `MST.prim()`, `MST.primMax()`
 
 ### Developer Experience
 
 **Capability-Based Interfaces** — `Traversable`, `Queryable`, `Mutable`, `Reversible` compose into role interfaces like `Walkable`, `WeightedWalkable`, `Bidirectional`  
 **Labeled Builder** — `LabeledBuilder` bridges ergonomic string/enum labels to internal `int` node IDs  
-**Strategy Pattern** — `Pathfinding.shortestPath()` accepts pluggable `PointToPointStrategy` implementations
+**Strategy Pattern** — `Pathfinding.shortestPath()` accepts pluggable `PointToPointStrategy` implementations  
+**Disjoint Set** — `DisjointSet` with path compression and union by rank
 
 ## Installation
 
@@ -129,6 +153,18 @@ void main() {
 
   final mst = MST.kruskal(undirected);
   print(mst.totalWeight); // 4.0
+
+  // Centrality
+  final scores = Centrality.betweenness(undirected);
+  print(scores); // {0: 0.0, 1: 0.0, 2: 0.0}
+
+  // Health metrics
+  print(Health.diameter(undirected)); // 1.0
+  print(Health.assortativity(undirected)); // 0.0 (all same degree)
+
+  // Connectivity
+  print(Components.connectedComponents(undirected)); // [[0, 1, 2]]
+  print(Structure.isTree(undirected)); // false (has a cycle)
 }
 ```
 
@@ -143,6 +179,37 @@ final builder = LabeledBuilder<String, int>.directed()
 final graph = builder.toGraph();
 final path = Pathfinding.shortestPath(graph, builder.getId('A')!, builder.getId('B')!);
 print(path); // Path(0 -> 2 -> 1, weight: 3.0)
+```
+
+### Connectivity & Structure
+
+```dart
+final graph = SimpleGraph<String, void>.undirected()
+  ..addEdge(0, 1)
+  ..addEdge(1, 2)
+  ..addEdge(2, 0)
+  ..addEdge(0, 3);
+
+// Bridges and articulation points
+final analysis = Analysis.analyze(graph);
+print(analysis.bridges);       // [(0, 3)]
+print(analysis.articulationPoints); // {0}
+
+// Strongly connected components (directed)
+final directed = SimpleGraph<String, void>.directed()
+  ..addEdge(0, 1)
+  ..addEdge(1, 2)
+  ..addEdge(2, 0)
+  ..addEdge(2, 3);
+
+print(SCC.tarjan(directed)); // [[3], [0, 1, 2]]
+
+// K-core decomposition
+print(KCore.coreNumbers(graph)); // {0: 2, 1: 2, 2: 2, 3: 1}
+
+// Structural predicates
+print(Structure.isChordal(graph)); // true
+print(Structure.isComplete(graph)); // false
 ```
 
 ## Development
@@ -165,10 +232,13 @@ dart format --output=none --set-exit-if-changed .
 
 ### Project Structure
 
-- `lib/src/model/` — Capability interfaces (`Traversable`, `Queryable`, `Mutable`, etc.)
+- `lib/src/model/` — Capability interfaces (`Traversable`, `Queryable`, `Mutable`, `Reversible`, `Bidirectional`)
 - `lib/src/pathfinding/` — Dijkstra, A*, Bellman-Ford, Floyd-Warshall
 - `lib/src/traversal/` — BFS, DFS, topological sort, random walk
 - `lib/src/mst/` — Kruskal's and Prim's MST algorithms
+- `lib/src/centrality/` — Brandes' algorithm + degree, closeness, harmonic, betweenness, PageRank, eigenvector, Katz, alpha, HITS
+- `lib/src/property/` — Health metrics (`Health`) and structural predicates (`Structure`)
+- `lib/src/connectivity/` — Components, SCC (Tarjan / Kosaraju), bridge/articulation-point analysis, K-core, reachability
 - `lib/src/builder/` — `LabeledBuilder` for ergonomic graph construction
 - `lib/src/internal/` — Shared utilities (`PriorityQueue`)
 
@@ -182,6 +252,14 @@ dart format --output=none --set-exit-if-changed .
 | **Traversal** | BFS, DFS, best-first, random walk | O(V+E) |
 | **DAG** | Topological sort (Kahn's) | O(V+E) |
 | **Union-Find** | Disjoint Set | O(α(V)) amortized |
+| **Centrality** | Degree, closeness, harmonic, betweenness (Brandes), PageRank, eigenvector, Katz, alpha, HITS | O(V×E) – O(V³) |
+| **Health** | Diameter, radius, eccentricity, assortativity, APL, global/local efficiency | O(V×(V+E) log V) |
+| **Components** | Connected, weakly connected | O(V+E) |
+| **SCC** | Tarjan, Kosaraju | O(V+E) |
+| **Analysis** | Bridges, articulation points | O(V+E) |
+| **K-Core** | Core numbers, degeneracy, shell decomposition | O(V+E) |
+| **Reachability** | Ancestor/descendant counts (exact) | O(V+E) |
+| **Structure** | Tree, forest, arborescence, complete, regular, chordal | O(V+E) |
 
 ## Related Projects
 
