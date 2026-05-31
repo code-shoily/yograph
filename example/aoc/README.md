@@ -68,6 +68,8 @@ The following table summarizes the high-performance graph solvers migrated from 
 | **2024 / 18** | [RAM Run](2024/day18.dart) | **15ms** | ~160ms | **10.6x** | `AStar.implicitAStar` grid pathfinding under falling bytes |
 | **2024 / 23** | [LAN Party](2024/day23.dart) | **25ms** | ~280ms | **11.2x** | `SimpleGraph`, Bron-Kerbosch maximal clique algorithm |
 | **2025 / 04** | [Printing Department](2025/day04.dart) | **146ms** | ~900ms | **6.1x** | `GridBuilder.from2DListWithTopology` (`GridTopologies.queen`), `SimpleGraph.removeNode` |
+| **2025 / 10** | [Factory](2025/day10.dart) | **68ms** | ~400ms | **5.8x** | `AStar.implicitAStar` guidance, set bits mismatch heuristic, parity dynamic programming |
+| **2025 / 11** | [Reactor](2025/day11.dart) | **13ms** | ~120ms | **9.2x** | `SimpleGraph`, `LabeledBuilder`, native `topologicalSort` path sums |
 
 ### 🛠️ Key Architectural Design Patterns Used:
 * **Implicit State-Space Searches**: For grid search problems (like 2021/15, 2019/18, 2024/18, 2016/13), we avoided materializing physical graphs on the heap by leveraging **implicit state generation** using packed integers or compact strings. This keeps the memory footprint near zero and optimizes CPU cache hits.
