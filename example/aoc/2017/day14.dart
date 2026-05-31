@@ -1,3 +1,4 @@
+import 'package:yograph/yograph.dart';
 import '../aoc_helper.dart';
 
 const sampleInput = 'flqrwskx';
@@ -39,38 +40,28 @@ void main() async {
 }
 
 int _countRegions(Set<int> onSet) {
-  final visited = <int>{};
-  var regions = 0;
+  final graph = SimpleGraph<Null, Null>.undirected();
 
   for (final id in onSet) {
-    if (visited.contains(id)) continue;
-    regions++;
+    graph.addNode(id);
+  }
 
-    final stack = [id];
-    visited.add(id);
+  for (final id in onSet) {
+    final r = id >> 16;
+    final c = id & 0xFFFF;
 
-    while (stack.isNotEmpty) {
-      final curr = stack.removeLast();
-      final r = curr >> 16;
-      final c = curr & 0xFFFF;
+    final downNeighbor = ((r + 1) << 16) | c;
+    final rightNeighbor = (r << 16) | (c + 1);
 
-      final neighbors = [
-        ((r + 1) << 16) | c,
-        ((r - 1) << 16) | c,
-        (r << 16) | (c + 1),
-        (r << 16) | (c - 1),
-      ];
-
-      for (final nid in neighbors) {
-        if (onSet.contains(nid) && !visited.contains(nid)) {
-          visited.add(nid);
-          stack.add(nid);
-        }
-      }
+    if (onSet.contains(downNeighbor)) {
+      graph.addEdge(id, downNeighbor);
+    }
+    if (onSet.contains(rightNeighbor)) {
+      graph.addEdge(id, rightNeighbor);
     }
   }
 
-  return regions;
+  return Components.connectedComponents(graph).length;
 }
 
 String _computeKnotHash(String key) {
