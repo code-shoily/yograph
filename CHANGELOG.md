@@ -8,3 +8,4 @@
 - Add topological sort implementation.
 - Add Disjoint Set Union implementation and Union Find based algorithms.
 - Add Kruskal's and Prim's algorithms for MST.
+- Add pathfinding implementations - Dijkstra, A*, Bellman-Ford, and Floyd-Warshall.

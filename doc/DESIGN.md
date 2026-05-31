@@ -104,7 +104,7 @@ Algorithms return structured result objects rather than raw collections:
 
 ```dart
 // Pathfinding
-final path = Pathfinding.dijkstra(graph, from: 'A', to: 'B');
+final path = Dijkstra.shortestPath(graph, 0, 1);
 print(path.nodes);   // ['A', 'C', 'B']
 print(path.weight);  // 15
 
@@ -174,18 +174,18 @@ Each YogEx module maps to a Dart static utility class:
 
 | Algorithm | Function | Complexity | Notes |
 |-----------|----------|------------|-------|
-| Dijkstra (single-source) | `Pathfinding.dijkstra()` | O((V+E) log V) | Uses `MinHeap` from existing algorithms repo |
-| Dijkstra (all-pairs unweighted) | `Pathfinding.allPairsUnweighted()` | O(V² + VE) | Parallel BFS from each node |
-| A* | `Pathfinding.aStar()` | O((V+E) log V) | Requires heuristic function |
-| Bellman-Ford | `Pathfinding.bellmanFord()` | O(VE) | Detects negative cycles |
-| Bidirectional Dijkstra | `Pathfinding.bidirectional()` | O((V+E) log V) | Faster for single-pair |
-| Bidirectional BFS | `Pathfinding.bidirectionalUnweighted()` | O(V + E) | For unweighted graphs |
-| Floyd-Warshall | `Pathfinding.floydWarshall()` | O(V³) | All-pairs dense graphs |
-| Johnson's | `Pathfinding.johnson()` | O(V² log V + VE) | All-pairs sparse, negative weights |
-| Yen (k-shortest) | `Pathfinding.kShortestPaths()` | O(k · V · (V+E) log V) | Loopless paths |
-| Widest Path | `Pathfinding.widestPath()` | O((V+E) log V) | Max bottleneck (min edge) |
-| Chinese Postman | `Pathfinding.chinesePostman()` | O(V³) | Route inspection |
-| LCA (binary lifting) | `Pathfinding.lca()` | O(V log V) preprocess, O(log V) query | Tree only |
+| Dijkstra (point-to-point) | `Dijkstra.shortestPath()` | O((V+E) log V) | Default strategy for `Pathfinding.shortestPath()` |
+| Dijkstra (single-source) | `Dijkstra.singleSourceDistances()` | O((V+E) log V) | All distances from source |
+| A* | `AStar.aStar()` | O((V+E) log V) | Requires heuristic function |
+| Bellman-Ford | `BellmanFord.shortestPaths()` | O(VE) | Detects negative cycles |
+| Bidirectional Dijkstra | `BidirectionalDijkstra.shortestPath()` | O((V+E) log V) | Faster for single-pair |
+| Bidirectional BFS | `BidirectionalBfs.shortestPath()` | O(V + E) | For unweighted graphs |
+| Floyd-Warshall | `FloydWarshall.allPairs()` | O(V³) | All-pairs dense graphs |
+| Johnson's | `Johnson.allPairs()` | O(V² log V + VE) | All-pairs sparse, negative weights |
+| Yen (k-shortest) | `Yen.kShortestPaths()` | O(k · V · (V+E) log V) | Loopless paths |
+| Widest Path | `Dijkstra.widestPath()` | O((V+E) log V) | Max bottleneck (min edge) |
+| Chinese Postman | `ChinesePostman.route()` | O(V³) | Route inspection |
+| LCA (binary lifting) | `Lca.query()` | O(V log V) preprocess, O(log V) query | Tree only |
 
 **Result type:** `Path` class with `nodes`, `weight`, `algorithm`, `metadata`.
 
@@ -435,7 +435,7 @@ final dot = DotRenderer.render(graph, options);
 graph.addEdge('A', 'B', weight: 10);  // throws if 'A' or 'B' doesn't exist
 
 // Missing data → Nullable
-final path = Pathfinding.dijkstra(graph, from: 'A', to: 'B');
+final path = Dijkstra.shortestPath(graph, 0, 1);
 if (path == null) { /* no path exists */ }
 
 // Validation → Exception with clear message
@@ -553,7 +553,7 @@ test('Dijkstra on linear chain', () {
     ..addEdge('B', 'C', weight: 2)
     ..addEdge('C', 'D', weight: 3);
 
-  final path = Pathfinding.dijkstra(graph, from: 'A', to: 'D');
+  final path = Dijkstra.shortestPath(graph, 0, 3);
   expect(path.nodes, ['A', 'B', 'C', 'D']);
   expect(path.weight, 6);
 });

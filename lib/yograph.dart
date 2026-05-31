@@ -24,6 +24,9 @@ export 'src/traversal/traversal.dart';
 // Data structures
 export 'src/disjoint_set.dart';
 
+// Pathfinding
+export 'src/pathfinding/pathfinding.dart';
+
 // MST
 export 'src/mst/mst_edge.dart';
 export 'src/mst/mst_result.dart';
