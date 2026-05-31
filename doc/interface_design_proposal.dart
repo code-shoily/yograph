@@ -2,25 +2,21 @@
 // PROPOSAL: Graph Interface Architecture for Yograph
 // ============================================================================
 // This file sketches three approaches for translating YogEx's model.ex
-// contract into Dart. Only one will be chosen; this doc compares them.
+// contract into Dart. Only Approach B was chosen; this doc is kept for
+// historical reference.
 //
-// GOAL: Algorithms should declare WHAT they need, not WHICH class they take.
-// This lets us swap SimpleGraph (dual-map) for MatrixGraph, SingleMapGraph,
-// or even a lazy proxy graph in the future.
+// NOTE: This proposal has been SUPERSEDED by the production implementation
+// in lib/src/model/ and lib/src/simple_graph.dart. The production code
+// resolved all type-system issues shown in the original sketch.
 // ============================================================================
 
 // =============================================================================
-// APPROACH A: Single Fat Interface
+// APPROACH A: Single Fat Interface — REJECTED
 // =============================================================================
 // One interface exposes every capability. Algorithms accept it.
-// Pros: Simple, no generics gymnastics.
-// Cons: Algorithms don't declare minimum requirements. Hard to know if a
-//       MatrixGraph (no in_edges) can be passed to betweenness().
-//
-// Verdict: Too rigid. Rejected.
+// Verdict: Too rigid. Doesn't let algorithms declare minimum requirements.
 
 abstract class GraphModel<N, E> {
-  GraphKind get kind;
   bool get isEmpty;
   int get nodeCount;
   int get edgeCount;
@@ -29,104 +25,74 @@ abstract class GraphModel<N, E> {
   N? nodeData(Object id);
   bool hasEdge(Object from, Object to);
   E? edgeData(Object from, Object to);
-  double edgeWeight(Object from, Object to); // throws if unweighted
+  double edgeWeight(Object from, Object to);
   Iterable<Object> successors(Object id);
   Iterable<Object> predecessors(Object id);
   int outDegree(Object id);
   int inDegree(Object id);
-  GraphModel<N, E> copy();
 }
 
 // =============================================================================
-// APPROACH B: Fine-Grained Capability Interfaces (RECOMMENDED)
+// APPROACH B: Fine-Grained Capability Interfaces — ADOPTED
 // =============================================================================
 // Split capabilities into small interfaces. Algorithms declare what they need
-// via COMBINED interfaces. Dart supports this cleanly with 'implements' chains.
+// via COMBINED role interfaces.
 //
-// Pros:
-//   - Algorithms self-document their requirements.
-//   - MatrixGraph can implement Traversable + Queryable but NOT Reversible.
-//   - Compile-time safety: you cannot pass an undirected-only view to an
-//     algorithm that needs predecessors.
-//
-// Cons:
-//   - Need to define "combo" interfaces for common pairs.
-//   - Slightly more boilerplate (but only once).
-//
-// How it works in Dart:
-//   Dart does NOT support `T extends A & B` in function type parameters.
-//   BUT Dart DOES support `class C implements A, B`, so we create small
-//   combined interfaces and use those as bounds. This is idiomatic Dart.
+// Key design decisions (from production implementation):
+//   - BOTH N and E are class-level generic parameters on ALL interfaces.
+//   - nodeData/edgeData return N?/E? (nullable), using hasNode/hasEdge to
+//     distinguish "missing" from "present but null data".
+//   - Internal maps are Map<Object, N?> and Map<Object, Map<Object, E?>>
+//     so null data can be stored without runtime casts.
+//   - Algorithm signatures propagate <N, E> generics; they never use raw
+//     types or default to dynamic.
 
 // ---------------------------------------------------------------------------
 // Base capability interfaces
 // ---------------------------------------------------------------------------
 
 abstract class Traversable {
-  /// All node IDs in the graph.
   Iterable<Object> get nodeIds;
-
-  /// IDs reachable directly from [id] via outgoing edges.
   Iterable<Object> successors(Object id);
-
-  /// Number of nodes.
   int get nodeCount;
-
-  /// True if the graph contains no nodes.
   bool get isEmpty;
 }
 
-abstract class Queryable<E> {
-  /// True if [id] is a node in the graph.
+/// Queryable is parameterized over BOTH node data (N) and edge data (E).
+/// nodeData takes NO method-level generic — it returns the class-level N?.
+abstract class Queryable<N, E> {
   bool hasNode(Object id);
-
-  /// Data attached to node [id], or null if missing / no data.
-  N? nodeData<N>(Object id);
-
-  /// True if there is a directed edge from -> to.
+  N? nodeData(Object id);
   bool hasEdge(Object from, Object to);
-
-  /// Data attached to edge from -> to, or null.
   E? edgeData(Object from, Object to);
-
-  /// Weight of edge from -> to. For unweighted graphs, returns 1.0.
   double edgeWeight(Object from, Object to);
 }
 
 abstract class Reversible<E> implements Traversable {
-  /// IDs that have an edge pointing TO [id].
   Iterable<Object> predecessors(Object id);
-
-  /// Number of incoming edges to [id].
   int inDegree(Object id);
 }
 
-abstract class Mutable<N, E> implements Traversable, Queryable<E> {
+abstract class Mutable<N, E> implements Traversable, Queryable<N, E> {
   void addNode(Object id, {N? data});
   void removeNode(Object id);
-  void addEdge(Object from, Object to, {E? data, double? weight});
+  void addEdge(Object from, Object to, {E? data});
   void removeEdge(Object from, Object to);
 }
 
 // ---------------------------------------------------------------------------
-// Combined "role" interfaces — these are what algorithms actually accept.
+// Combined "role" interfaces — parameterized over BOTH N and E.
 // ---------------------------------------------------------------------------
 
-/// Anything you can walk over (BFS/DFS/traversal).
-abstract class Walkable<E> implements Traversable, Queryable<E> {}
+abstract class Walkable<N, E> implements Traversable, Queryable<N, E> {}
 
-/// Anything you can run shortest-path on.
-/// Needs successors (to explore) + edge weights (to prioritize).
-abstract class WeightedWalkable<E>
-    implements Traversable, Queryable<E> {}
+abstract class WeightedWalkable<N, E> implements Traversable, Queryable<N, E> {}
 
-/// Anything you can compute betweenness / SCC / transpose on.
-/// Needs both out-edges and in-edges.
-abstract class Bidirectional<E>
-    implements Traversable, Reversible<E>, Queryable<E> {}
+abstract class Bidirectional<N, E>
+    implements Traversable, Reversible<E>, Queryable<N, E> {}
 
 // ---------------------------------------------------------------------------
-// Algorithm signatures under Approach B
+// Algorithm signatures — propagate <N, E> to avoid dynamic.
 // ---------------------------------------------------------------------------
 
 class PathResult {
@@ -135,42 +101,46 @@ class PathResult {
   PathResult(this.nodes, this.weight);
 }
 
-// BFS only needs to walk successors.
-List<Object>? bfsPath(Walkable graph, Object from, Object to) {
-  // ...
+List<Object>? bfsPath<N, E>(Walkable<N, E> graph, Object from, Object to) {
   return null;
 }
 
-// Dijkstra needs successors + edge weights.
-PathResult? dijkstra<W extends WeightedWalkable>(
-    W graph, Object from, Object to) {
-  // ...
+PathResult? dijkstra<N, E>(
+  WeightedWalkable<N, E> graph,
+  Object from,
+  Object to,
+) {
   return null;
 }
 
-// Betweenness needs predecessors (dual-index).
-Map<Object, double> betweenness<B extends Bidirectional>(B graph) {
-  // ...
+Map<Object, double> betweenness<N, E>(Bidirectional<N, E> graph) {
   return {};
 }
 
-// Kosaraju needs transpose => needs in_edges.
-List<List<Object>> kosaraju<B extends Bidirectional>(B graph) {
-  // ...
+List<List<Object>> kosaraju<N, E>(Bidirectional<N, E> graph) {
   return [];
 }
 
 // ---------------------------------------------------------------------------
-// Concrete implementation: SimpleGraph (dual-map, like YogEx)
+// Concrete: SimpleGraph (dual-map, like YogEx)
 // ---------------------------------------------------------------------------
+// Internal maps store N? and E? so null data is valid without casts.
 
 enum GraphKind { directed, undirected }
 
-class SimpleGraph<N, E> implements Walkable<E>, Bidirectional<E>, Mutable<N, E> {
+class SimpleGraph<N, E>
+    implements
+        Walkable<N, E>,
+        WeightedWalkable<N, E>,
+        Bidirectional<N, E>,
+        Mutable<N, E> {
   final GraphKind kind;
-  final Map<Object, N> _nodes = {};
-  final Map<Object, Map<Object, E>> _out = {};
-  final Map<Object, Map<Object, E>> _in = {};
+  final Map<Object, N?> _nodes = {};
+  final Map<Object, Map<Object, E?>> _out = {};
+  final Map<Object, Map<Object, E?>> _in = {};
+  int _edgeCount = 0;
+
+  int get edgeCount => _edgeCount;
 
   SimpleGraph.directed() : kind = GraphKind.directed;
   SimpleGraph.undirected() : kind = GraphKind.undirected;
@@ -188,10 +158,7 @@ class SimpleGraph<N, E> implements Walkable<E>, Bidirectional<E>, Mutable<N, E> 
   bool hasNode(Object id) => _nodes.containsKey(id);
 
   @override
-  N? nodeData<N>(Object id) {
-    final v = _nodes[id];
-    return v is N ? v : null;
-  }
+  N? nodeData(Object id) => _nodes[id];
 
   @override
   bool hasEdge(Object from, Object to) => _out[from]?.containsKey(to) ?? false;
@@ -201,10 +168,12 @@ class SimpleGraph<N, E> implements Walkable<E>, Bidirectional<E>, Mutable<N, E> 
 
   @override
   double edgeWeight(Object from, Object to) {
+    if (!hasEdge(from, to)) {
+      throw StateError('No edge from $from to $to');
+    }
     final data = edgeData(from, to);
-    if (data == null) return double.infinity;
     if (data is num) return data.toDouble();
-    return 1.0; // unweighted default
+    return 1.0;
   }
 
   @override
@@ -218,41 +187,63 @@ class SimpleGraph<N, E> implements Walkable<E>, Bidirectional<E>, Mutable<N, E> 
 
   @override
   void addNode(Object id, {N? data}) {
-    _nodes[id] = data as N;
+    _nodes[id] = data;
     _out.putIfAbsent(id, () => {});
     _in.putIfAbsent(id, () => {});
   }
 
   @override
-  void addEdge(Object from, Object to, {E? data, double? weight}) {
-    _out.putIfAbsent(from, () => {})[to] = data as E;
-    _in.putIfAbsent(to, () => {})[from] = data as E;
-    if (kind == GraphKind.undirected) {
-      _out.putIfAbsent(to, () => {})[from] = data as E;
-      _in.putIfAbsent(from, () => {})[to] = data as E;
+  void addEdge(Object from, Object to, {E? data}) {
+    if (!hasNode(from)) addNode(from);
+    if (!hasNode(to)) addNode(to);
+
+    final existed = _out[from]!.containsKey(to);
+    if (!existed) _edgeCount++;
+
+    _out[from]![to] = data;
+    _in[to]![from] = data;
+
+    if (kind == GraphKind.undirected && from != to) {
+      _out[to]![from] = data;
+      _in[from]![to] = data;
     }
   }
 
   @override
   void removeNode(Object id) {
-    // ...
+    for (final to in List<Object>.from(_out[id]!.keys)) {
+      removeEdge(id, to);
+    }
+    for (final from in List<Object>.from(_in[id]!.keys)) {
+      removeEdge(from, id);
+    }
+    _nodes.remove(id);
+    _out.remove(id);
+    _in.remove(id);
   }
 
   @override
   void removeEdge(Object from, Object to) {
-    // ...
+    if (_out[from]?.containsKey(to) != true) return;
+    _out[from]!.remove(to);
+    _in[to]!.remove(from);
+    _edgeCount--;
+    if (kind == GraphKind.undirected && from != to) {
+      _out[to]!.remove(from);
+      _in[from]!.remove(to);
+    }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Concrete implementation: SingleMapGraph (out-edges only, for DAGs/trees)
+// Concrete: SingleMapGraph (out-edges only)
 // ---------------------------------------------------------------------------
-// This can implement Walkable but NOT Bidirectional.
-// Compile-time safety: betweenness(SingleMapGraph) is a type error!
+// Implements Walkable but NOT Bidirectional.
 
-class SingleMapGraph<N, E> implements Walkable<E>, Mutable<N, E> {
-  final Map<Object, N> _nodes = {};
-  final Map<Object, Map<Object, E>> _out = {};
+class SingleMapGraph<N, E>
+    implements Walkable<N, E>, WeightedWalkable<N, E>, Mutable<N, E> {
+  final Map<Object, N?> _nodes = {};
+  final Map<Object, Map<Object, E?>> _out = {};
 
   @override
   Iterable<Object> get nodeIds => _nodes.keys;
@@ -267,10 +258,7 @@ class SingleMapGraph<N, E> implements Walkable<E>, Mutable<N, E> {
   bool hasNode(Object id) => _nodes.containsKey(id);
 
   @override
-  N? nodeData<N2>(Object id) {
-    final v = _nodes[id];
-    return v is N2 ? v : null;
-  }
+  N? nodeData(Object id) => _nodes[id];
 
   @override
   bool hasEdge(Object from, Object to) => _out[from]?.containsKey(to) ?? false;
@@ -280,8 +268,10 @@ class SingleMapGraph<N, E> implements Walkable<E>, Mutable<N, E> {
 
   @override
   double edgeWeight(Object from, Object to) {
+    if (!hasEdge(from, to)) {
+      throw StateError('No edge from $from to $to');
+    }
     final data = edgeData(from, to);
-    if (data == null) return double.infinity;
     if (data is num) return data.toDouble();
     return 1.0;
   }
@@ -291,13 +281,15 @@ class SingleMapGraph<N, E> implements Walkable<E>, Mutable<N, E> {
 
   @override
   void addNode(Object id, {N? data}) {
-    _nodes[id] = data as N;
+    _nodes[id] = data;
     _out.putIfAbsent(id, () => {});
   }
 
   @override
-  void addEdge(Object from, Object to, {E? data, double? weight}) {
-    _out.putIfAbsent(from, () => {})[to] = data as E;
+  void addEdge(Object from, Object to, {E? data}) {
+    if (!hasNode(from)) addNode(from);
+    if (!hasNode(to)) addNode(to);
+    _out[from]![to] = data;
   }
 
   @override
@@ -308,31 +300,12 @@ class SingleMapGraph<N, E> implements Walkable<E>, Mutable<N, E> {
 }
 
 // =============================================================================
-// APPROACH C: Extension-Type Views (Dart 3.2+)
+// APPROACH C: Extension-Type Views — DEFERRED
 // =============================================================================
-// Use `extension type` to create zero-cost views that implement the
-// capability interfaces over any underlying storage.
-//
-// Pros: Zero overhead, decouples storage from interface.
-// Cons: Requires Dart 3.2+, slightly exotic for contributors.
-//
-// This is APPROACH B's companion — we can use both.
-
-// Example: a view over a Map-of-Lists adjacency list (no edge data).
-extension type AdjListView._(Map<Object, List<Object>> _adj)
-    implements Traversable {
-  @override
-  Iterable<Object> get nodeIds => _adj.keys;
-
-  @override
-  int get nodeCount => _adj.length;
-
-  @override
-  bool get isEmpty => _adj.isEmpty;
-
-  @override
-  Iterable<Object> successors(Object id) => _adj[id] ?? const [];
-}
+// Extension types (Dart 3.2+) can create zero-cost views, but they cannot
+// implement an interface unless their representation type is a subtype.
+// A Map is not a Traversable, so AdjListView must be a regular class or
+// delegate to an inner object. Deferred until a concrete use case arises.
 
 // =============================================================================
 // USAGE EXAMPLES
@@ -345,10 +318,10 @@ void main() {
     ..addNode('B', data: 'End')
     ..addEdge('A', 'B', data: 42);
 
-  // All of these compile:
-  bfsPath(full, 'A', 'B');
-  dijkstra(full, 'A', 'B');
-  betweenness(full);
+  // All of these compile with strict generics:
+  bfsPath<String, int>(full, 'A', 'B');
+  dijkstra<String, int>(full, 'A', 'B');
+  betweenness<String, int>(full);
 
   // --- SingleMapGraph (out-edges only) ---
   final dag = SingleMapGraph<String, int>()
@@ -357,14 +330,10 @@ void main() {
     ..addEdge('A', 'B');
 
   // These compile:
-  bfsPath(dag, 'A', 'B');
-  dijkstra(dag, 'A', 'B');
+  bfsPath<String, int>(dag, 'A', 'B');
+  dijkstra<String, int>(dag, 'A', 'B');
 
   // This is a COMPILE ERROR:
-  // betweenness(dag);  // ERROR: SingleMapGraph doesn't implement Bidirectional
-
-  // --- Extension type view over raw data ---
-  final raw = {'A': ['B', 'C'], 'B': ['C']};
-  final view = AdjListView(raw);
-  bfsPath(view, 'A', 'C'); // compiles! Traversable only.
+  // betweenness<String, int>(dag);
+  // ERROR: SingleMapGraph doesn't implement Bidirectional
 }
