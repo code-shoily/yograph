@@ -21,6 +21,14 @@ export 'src/traversal/walk_control.dart';
 export 'src/traversal/walk_metadata.dart';
 export 'src/traversal/traversal.dart';
 
+// Data structures
+export 'src/disjoint_set.dart';
+
+// MST
+export 'src/mst/mst_edge.dart';
+export 'src/mst/mst_result.dart';
+export 'src/mst/mst.dart';
+
 // Implementations
 export 'src/simple_graph.dart';
 
