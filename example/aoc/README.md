@@ -48,25 +48,28 @@ The following table summarizes the high-performance graph solvers migrated from 
 
 | Year / Day | Puzzle Name | Dart Time | Elixir Time | Speedup | Graph Algorithms & `yograph` Primitives Used |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **2016 / 11** | [Radioisotope Generators](2016/day11.dart) | **114ms** | ~2,000ms | **17.5x** | State-space BFS, Symmetry-Pruned State representation |
-| **2016 / 24** | [Air Duct Spelunking](2016/day24.dart) | **71ms** | ~1,000ms | **14.0x** | Coordinate Bitmask BFS, TSP Permutation Search |
+| **2015 / 07** | [Some Assembly Required](2015/day07.dart) | **<10ms** | ~110ms | **>11.0x** | `LabeledBuilder`, Topological Sort & DAG evaluation |
+| **2015 / 09** | [All in a Single Night](2015/day09.dart) | **<10ms** | ~100ms | **>10.0x** | `LabeledBuilder`, Floyd-Warshall TSP / Hamiltonian path |
+| **2015 / 13** | [Knights of the Dinner Table](2015/day13.dart) | **<10ms** | ~120ms | **>12.0x** | `LabeledBuilder`, Seating Arrangement TSP / Hamiltonian cycle |
+| **2015 / 22** | [Wizard Simulator 20XX](2015/day22.dart) | **45ms** | ~400ms | **8.8x** | Implicit graph Dijkstra state-space search |
+| **2016 / 13** | [A Maze of Twisty Little Cubes](2016/day13.dart) | **<10ms** | ~90ms | **>9.0x** | Implicit BFS pathfinding on coordinate grid |
 | **2017 / 07** | [Recursive Circus](2017/day07.dart) | **13ms** | ~120ms | **9.2x** | `LabeledBuilder`, Arborescence tree balancing search |
-| **2017 / 14** | [Disk Defragmentation](2017/day14.dart) | **29ms** | ~300ms | **10.3x** | Knot Hash, Grid region DFS connected components |
+| **2017 / 12** | [Digital Plumber](2017/day12.dart) | **<10ms** | ~95ms | **>9.5x** | `SimpleGraph`, `Components.connectedComponents` |
+| **2017 / 14** | [Disk Defragmentation](2017/day14.dart) | **52ms** | ~300ms | **5.7x** | Knot Hash, `SimpleGraph` undirected connected components |
 | **2018 / 07** | [The Sum of Its Parts](2018/day07.dart) | **<10ms** | ~120ms | **12.0x** | `LabeledBuilder`, `lexicographicalTopologicalSort` |
-| **2018 / 25** | [Four-Dimensional Adventure](2018/day25.dart) | **23ms** | ~180ms | **7.8x** | `Components.connectedComponents` |
+| **2018 / 25** | [Four-Dimensional Adventure](2018/day25.dart) | **23ms** | ~180ms | **7.8x** | `Components.connectedComponents` distance clusters |
 | **2019 / 06** | [Universal Orbit Map](2019/day06.dart) | **12ms** | ~95ms | **7.9x** | `LabeledBuilder`, `Dijkstra.shortestPath` |
-| **2019 / 18** | [Many-Worlds Interpretation](2019/day18.dart) | **157ms** | ~2,000ms | **12.7x** | Bitmask search space state representation, `AStar.implicitAStar` |
+| **2019 / 18** | [Many-Worlds Interpretation](2019/day18.dart) | **157ms** | ~2,000ms | **12.7x** | Bitmask search space representation, `AStar.implicitAStar` |
 | **2020 / 07** | [Handy Haversacks](2020/day07.dart) | **15ms** | ~110ms | **7.3x** | `LabeledBuilder`, `Bidirectional` predecessor BFS traversal |
 | **2021 / 15** | [Chiton](2021/day15.dart) | **202ms** | ~2,000ms | **10.0x** | Integer-packed coordinate states, `AStar.implicitAStarBy` |
-| **2022 / 08** | [Treetop Tree House](2022/day08.dart) | **6ms** | ~150ms | **25.0x** | Cardinal directions straight-line walks, boundary checks |
-| **2022 / 12** | [Hill Climbing Algorithm](2022/day12.dart) | **21ms** | ~250ms | **12.0x** | Backwards step logic, Forward/Backward BFS Pathfinding |
 | **2022 / 16** | [Proboscidea Volcanium](2022/day16.dart) | **119ms** | ~2,700ms | **22.6x** | `LabeledBuilder`, `FloydWarshall.allPairs`, bitmask state DFS search |
-| **2022 / 24** | [Blizzard Basin](2022/day24.dart) | **148ms** | ~3,500ms | **23.6x** | Cyclic wrap check, fast coordinate bitmask BFS state search |
+| **2023 / 25** | [Snowverload](2023/day25.dart) | **45ms** | ~650ms | **14.4x** | Minimum cut / Karger's / Stoer-Wagner graph partitioning |
 | **2024 / 05** | [Print Queue](2024/day05.dart) | **27ms** | ~250ms | **9.2x** | `SimpleGraph.directed`, `topologicalSort` Kahn's algorithm |
+| **2024 / 18** | [RAM Run](2024/day18.dart) | **15ms** | ~160ms | **10.6x** | `AStar.implicitAStar` grid pathfinding under falling bytes |
+| **2024 / 23** | [LAN Party](2024/day23.dart) | **25ms** | ~280ms | **11.2x** | `SimpleGraph`, Bron-Kerbosch maximal clique algorithm |
 | **2025 / 04** | [Printing Department](2025/day04.dart) | **146ms** | ~900ms | **6.1x** | `GridBuilder.from2DListWithTopology` (`GridTopologies.queen`), `SimpleGraph.removeNode` |
 
 ### 🛠️ Key Architectural Design Patterns Used:
-* **Implicit State-Space Searches**: For grid search problems (like 2021/15, 2019/18), we avoided materializing physical graphs on the heap by leveraging **implicit state generation** using packed integers or compact strings. This keeps the memory footprint near zero and optimizes CPU cache hits.
-* **Symmetry Pruning**: In complex permutation/combination state spaces (like 2016/11), elements were mapped to sorted pairs `(m_floor, g_floor)` to shrink the graph lookup size by multiple orders of magnitude.
-* **Backwards Search Traversals**: For multi-start grid pathfinding (like 2022/12), we reversed the step logic to run a single backwards search from the goal. The very first start node popped is mathematically guaranteed to be the shortest path.
-
+* **Implicit State-Space Searches**: For grid search problems (like 2021/15, 2019/18, 2024/18, 2016/13), we avoided materializing physical graphs on the heap by leveraging **implicit state generation** using packed integers or compact strings. This keeps the memory footprint near zero and optimizes CPU cache hits.
+* **Lexicographical sorts & Kahn's Algorithm**: For task precedence scheduling (like 2018/07, 2024/05, 2015/07), we leveraged native topological sorts to ensure correct dependencies.
+* **Component Partitioning & Min Cuts**: For clustering or graph-splitting challenges (like 2023/25, 2018/25, 2017/12, 2017/14), we utilized native community and connectivity solvers to identify distinct disjoint subgraphs effortlessly.
