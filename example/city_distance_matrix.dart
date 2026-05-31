@@ -19,16 +19,13 @@ void main() {
   final cities = ['Aurora', 'Bluffton', 'Canton', 'Dayton'];
 
   // Build an undirected road network with distances in miles
-  final graph = SimpleGraph<String, int>.fromEdgesWithData(
-    [
-      (aurora, bluffton, 4),
-      (aurora, canton, 2),
-      (bluffton, canton, 1),
-      (bluffton, dayton, 5),
-      (canton, dayton, 8),
-    ],
-    kind: GraphKind.undirected,
-  );
+  final graph = SimpleGraph<String, int>.fromEdgesWithData([
+    (aurora, bluffton, 4),
+    (aurora, canton, 2),
+    (bluffton, canton, 1),
+    (bluffton, dayton, 5),
+    (canton, dayton, 8),
+  ], kind: GraphKind.undirected);
 
   // Compute all-pairs shortest paths
   final fw = FloydWarshall.allPairs(graph);

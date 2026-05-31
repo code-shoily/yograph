@@ -11,23 +11,20 @@ void main() {
   final names = ['Alice', 'Bob', 'Carol', 'Dave', 'Eve', 'Frank', 'Grace'];
 
   // Undirected friendship graph
-  final graph = SimpleGraph<String, void>.fromEdges(
-    [
-      // Community 1: Alice, Bob, Carol, Dave
-      (0, 1),
-      (0, 2),
-      (1, 2),
-      (1, 3),
-      (2, 3),
-      // Community 2: Eve, Frank, Grace
-      (4, 5),
-      (4, 6),
-      (5, 6),
-      // Bridge between communities
-      (3, 4),
-    ],
-    kind: GraphKind.undirected,
-  );
+  final graph = SimpleGraph<String, void>.fromEdges([
+    // Community 1: Alice, Bob, Carol, Dave
+    (0, 1),
+    (0, 2),
+    (1, 2),
+    (1, 3),
+    (2, 3),
+    // Community 2: Eve, Frank, Grace
+    (4, 5),
+    (4, 6),
+    (5, 6),
+    // Bridge between communities
+    (3, 4),
+  ], kind: GraphKind.undirected);
 
   // ── Centrality ──
   print('=== Centrality Analysis ===');

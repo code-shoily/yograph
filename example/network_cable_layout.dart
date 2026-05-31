@@ -26,21 +26,18 @@ void main() {
   ];
 
   // Undirected graph: edge weight = cost in thousands of dollars
-  final graph = SimpleGraph<String, int>.fromEdgesWithData(
-    [
-      (hub, officeA, 7),
-      (hub, officeB, 9),
-      (hub, officeC, 14),
-      (officeA, officeB, 10),
-      (officeA, officeD, 15),
-      (officeB, officeC, 2),
-      (officeB, officeD, 11),
-      (officeC, officeD, 6),
-      (officeC, warehouse, 9),
-      (officeD, warehouse, 9),
-    ],
-    kind: GraphKind.undirected,
-  );
+  final graph = SimpleGraph<String, int>.fromEdgesWithData([
+    (hub, officeA, 7),
+    (hub, officeB, 9),
+    (hub, officeC, 14),
+    (officeA, officeB, 10),
+    (officeA, officeD, 15),
+    (officeB, officeC, 2),
+    (officeB, officeD, 11),
+    (officeC, officeD, 6),
+    (officeC, warehouse, 9),
+    (officeD, warehouse, 9),
+  ], kind: GraphKind.undirected);
 
   // Kruskal's MST
   final mst = MST.kruskal(graph);
