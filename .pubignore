@@ -1,2 +1,6 @@
 # Exclude large puzzle inputs and AoC solutions from pub.dev packaging
 example/aoc/
+
+# Exclude coverage reports, scratch files, and dev artifacts
+coverage/
+bin/
