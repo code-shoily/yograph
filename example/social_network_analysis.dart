@@ -11,19 +11,23 @@ void main() {
   final names = ['Alice', 'Bob', 'Carol', 'Dave', 'Eve', 'Frank', 'Grace'];
 
   // Undirected friendship graph
-  final graph = SimpleGraph<String, void>.undirected()
-    // Community 1: Alice, Bob, Carol, Dave
-    ..addEdge(0, 1)
-    ..addEdge(0, 2)
-    ..addEdge(1, 2)
-    ..addEdge(1, 3)
-    ..addEdge(2, 3)
-    // Community 2: Eve, Frank, Grace
-    ..addEdge(4, 5)
-    ..addEdge(4, 6)
-    ..addEdge(5, 6)
-    // Bridge between communities
-    ..addEdge(3, 4);
+  final graph = SimpleGraph<String, void>.fromEdges(
+    [
+      // Community 1: Alice, Bob, Carol, Dave
+      (0, 1),
+      (0, 2),
+      (1, 2),
+      (1, 3),
+      (2, 3),
+      // Community 2: Eve, Frank, Grace
+      (4, 5),
+      (4, 6),
+      (5, 6),
+      // Bridge between communities
+      (3, 4),
+    ],
+    kind: GraphKind.undirected,
+  );
 
   // ── Centrality ──
   print('=== Centrality Analysis ===');
@@ -41,8 +45,9 @@ void main() {
   }
 
   // Find the most influential (highest betweenness)
-  final maxBetweenness = betweenness.entries
-      .reduce((a, b) => a.value > b.value ? a : b);
+  final maxBetweenness = betweenness.entries.reduce(
+    (a, b) => a.value > b.value ? a : b,
+  );
   print('');
   print(
     'Most influential: ${names[maxBetweenness.key]} '
@@ -67,9 +72,7 @@ void main() {
   print('Diameter: ${Health.diameter(graph)?.toStringAsFixed(1)}');
   print('Radius:   ${Health.radius(graph)?.toStringAsFixed(1)}');
   print('APL:      ${Health.averagePathLength(graph)?.toStringAsFixed(2)}');
-  print(
-    'Assortativity: ${Health.assortativity(graph).toStringAsFixed(3)}',
-  );
+  print('Assortativity: ${Health.assortativity(graph).toStringAsFixed(3)}');
 
   // ── Bridges ──
   print('');

@@ -16,20 +16,31 @@ void main() {
   const officeD = 4;
   const warehouse = 5;
 
-  final labels = ['Hub', 'Office A', 'Office B', 'Office C', 'Office D', 'Warehouse'];
+  final labels = [
+    'Hub',
+    'Office A',
+    'Office B',
+    'Office C',
+    'Office D',
+    'Warehouse',
+  ];
 
   // Undirected graph: edge weight = cost in thousands of dollars
-  final graph = SimpleGraph<String, int>.undirected()
-    ..addEdge(hub, officeA, data: 7)
-    ..addEdge(hub, officeB, data: 9)
-    ..addEdge(hub, officeC, data: 14)
-    ..addEdge(officeA, officeB, data: 10)
-    ..addEdge(officeA, officeD, data: 15)
-    ..addEdge(officeB, officeC, data: 2)
-    ..addEdge(officeB, officeD, data: 11)
-    ..addEdge(officeC, officeD, data: 6)
-    ..addEdge(officeC, warehouse, data: 9)
-    ..addEdge(officeD, warehouse, data: 9);
+  final graph = SimpleGraph<String, int>.fromEdgesWithData(
+    [
+      (hub, officeA, 7),
+      (hub, officeB, 9),
+      (hub, officeC, 14),
+      (officeA, officeB, 10),
+      (officeA, officeD, 15),
+      (officeB, officeC, 2),
+      (officeB, officeD, 11),
+      (officeC, officeD, 6),
+      (officeC, warehouse, 9),
+      (officeD, warehouse, 9),
+    ],
+    kind: GraphKind.undirected,
+  );
 
   // Kruskal's MST
   final mst = MST.kruskal(graph);
@@ -48,5 +59,7 @@ void main() {
   // Compare with Prim
   final primMst = MST.prim(graph);
   print('');
-  print('Prim agrees — total cost: \$${primMst.totalWeight.toStringAsFixed(1)}k');
+  print(
+    'Prim agrees — total cost: \$${primMst.totalWeight.toStringAsFixed(1)}k',
+  );
 }

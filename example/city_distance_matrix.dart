@@ -19,12 +19,16 @@ void main() {
   final cities = ['Aurora', 'Bluffton', 'Canton', 'Dayton'];
 
   // Build an undirected road network with distances in miles
-  final graph = SimpleGraph<String, int>.undirected()
-    ..addEdge(aurora, bluffton, data: 4)
-    ..addEdge(aurora, canton, data: 2)
-    ..addEdge(bluffton, canton, data: 1)
-    ..addEdge(bluffton, dayton, data: 5)
-    ..addEdge(canton, dayton, data: 8);
+  final graph = SimpleGraph<String, int>.fromEdgesWithData(
+    [
+      (aurora, bluffton, 4),
+      (aurora, canton, 2),
+      (bluffton, canton, 1),
+      (bluffton, dayton, 5),
+      (canton, dayton, 8),
+    ],
+    kind: GraphKind.undirected,
+  );
 
   // Compute all-pairs shortest paths
   final fw = FloydWarshall.allPairs(graph);
@@ -51,5 +55,7 @@ void main() {
   }
 
   print('');
-  print('Shortest distance from Aurora to Dayton: ${fw.distance(aurora, dayton)} miles');
+  print(
+    'Shortest distance from Aurora to Dayton: ${fw.distance(aurora, dayton)} miles',
+  );
 }

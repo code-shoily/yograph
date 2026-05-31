@@ -17,19 +17,23 @@ void main() {
   final names = ['North Bank', 'South Bank', 'East Island', 'West Island'];
 
   // The famous 7 bridges (undirected)
-  final graph = SimpleGraph<String, void>.undirected()
-    // North ↔ East (2 bridges)
-    ..addEdge(north, east)
-    ..addEdge(north, east)
-    // North ↔ West (1 bridge)
-    ..addEdge(north, west)
-    // South ↔ East (2 bridges)
-    ..addEdge(south, east)
-    ..addEdge(south, east)
-    // South ↔ West (1 bridge)
-    ..addEdge(south, west)
-    // East ↔ West (1 bridge)
-    ..addEdge(east, west);
+  final graph = SimpleGraph<String, void>.fromEdges(
+    [
+      // North ↔ East (2 bridges)
+      (north, east),
+      (north, east),
+      // North ↔ West (1 bridge)
+      (north, west),
+      // South ↔ East (2 bridges)
+      (south, east),
+      (south, east),
+      // South ↔ West (1 bridge)
+      (south, west),
+      // East ↔ West (1 bridge)
+      (east, west),
+    ],
+    kind: GraphKind.undirected,
+  );
 
   print('The Seven Bridges of Königsberg');
   print('');

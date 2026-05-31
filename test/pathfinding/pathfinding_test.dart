@@ -17,17 +17,17 @@ import 'package:yograph/yograph.dart';
 ///
 /// Shortest A→F: A→C→B→D→E→F = 2+1+5+2+2 = 12
 SimpleGraph<String, int> _classicDijkstra() {
-  final g = SimpleGraph<String, int>.directed();
-  g.addEdge(0, 1, data: 4); // A -> B
-  g.addEdge(0, 2, data: 2); // A -> C
-  g.addEdge(2, 1, data: 1); // C -> B
-  g.addEdge(1, 3, data: 5); // B -> D
-  g.addEdge(2, 3, data: 8); // C -> D
-  g.addEdge(2, 4, data: 10); // C -> E
-  g.addEdge(3, 4, data: 2); // D -> E
-  g.addEdge(3, 5, data: 6); // D -> F
-  g.addEdge(4, 5, data: 2); // E -> F
-  return g;
+  return SimpleGraph.fromEdgesWithData([
+    (0, 1, 4), // A -> B
+    (0, 2, 2), // A -> C
+    (2, 1, 1), // C -> B
+    (1, 3, 5), // B -> D
+    (2, 3, 8), // C -> D
+    (2, 4, 10), // C -> E
+    (3, 4, 2), // D -> E
+    (3, 5, 6), // D -> F
+    (4, 5, 2), // E -> F
+  ]);
 }
 
 /// A* textbook graph (directed).
@@ -42,17 +42,17 @@ SimpleGraph<String, int> _classicDijkstra() {
 ///
 /// Shortest A→G: A→B→D→E→G = 2+2+2+2 = 8
 SimpleGraph<String, int> _aStarGraph() {
-  final g = SimpleGraph<String, int>.directed();
-  g.addEdge(0, 1, data: 2); // A -> B
-  g.addEdge(0, 2, data: 2); // A -> C
-  g.addEdge(1, 3, data: 2); // B -> D
-  g.addEdge(2, 3, data: 3); // C -> D
-  g.addEdge(1, 4, data: 5); // B -> E
-  g.addEdge(3, 4, data: 2); // D -> E
-  g.addEdge(3, 5, data: 2); // D -> F
-  g.addEdge(4, 6, data: 2); // E -> G
-  g.addEdge(5, 6, data: 4); // F -> G
-  return g;
+  return SimpleGraph.fromEdgesWithData([
+    (0, 1, 2), // A -> B
+    (0, 2, 2), // A -> C
+    (1, 3, 2), // B -> D
+    (2, 3, 3), // C -> D
+    (1, 4, 5), // B -> E
+    (3, 4, 2), // D -> E
+    (3, 5, 2), // D -> F
+    (4, 6, 2), // E -> G
+    (5, 6, 4), // F -> G
+  ]);
 }
 
 /// Widest-path graph (directed).
@@ -65,12 +65,12 @@ SimpleGraph<String, int> _aStarGraph() {
 ///
 /// Widest A→D: A→B→D = min(100,80) = 80
 SimpleGraph<String, int> _widestGraph() {
-  final g = SimpleGraph<String, int>.directed();
-  g.addEdge(0, 1, data: 100); // A -> B
-  g.addEdge(0, 2, data: 50); // A -> C
-  g.addEdge(1, 3, data: 80); // B -> D
-  g.addEdge(2, 3, data: 200); // C -> D
-  return g;
+  return SimpleGraph.fromEdgesWithData([
+    (0, 1, 100), // A -> B
+    (0, 2, 50), // A -> C
+    (1, 3, 80), // B -> D
+    (2, 3, 200), // C -> D
+  ]);
 }
 
 // =============================================================================

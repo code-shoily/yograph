@@ -23,22 +23,23 @@ class Point {
 void main() {
   // Intersection IDs and their GPS coordinates
   final coords = <int, Point>{
-    0: const Point(0, 0),   // Home
-    1: const Point(2, 1),   // Oak St
-    2: const Point(1, 3),   // Pine St
-    3: const Point(4, 2),   // Elm St
-    4: const Point(3, 5),   // Downtown
+    0: const Point(0, 0), // Home
+    1: const Point(2, 1), // Oak St
+    2: const Point(1, 3), // Pine St
+    3: const Point(4, 2), // Elm St
+    4: const Point(3, 5), // Downtown
   };
 
   // Build a directed road network with travel times in minutes
-  final graph = SimpleGraph<String, int>.directed()
-    ..addEdge(0, 1, data: 5)
-    ..addEdge(0, 2, data: 8)
-    ..addEdge(1, 2, data: 2)
-    ..addEdge(1, 3, data: 6)
-    ..addEdge(2, 3, data: 3)
-    ..addEdge(2, 4, data: 4)
-    ..addEdge(3, 4, data: 2);
+  final graph = SimpleGraph<String, int>.fromEdgesWithData([
+    (0, 1, 5),
+    (0, 2, 8),
+    (1, 2, 2),
+    (1, 3, 6),
+    (2, 3, 3),
+    (2, 4, 4),
+    (3, 4, 2),
+  ]);
 
   const home = 0;
   const downtown = 4;
@@ -49,8 +50,7 @@ void main() {
     home,
     downtown,
     strategy: AStar(
-      heuristic: (node, goal) =>
-          coords[node]!.distanceTo(coords[goal]!),
+      heuristic: (node, goal) => coords[node]!.distanceTo(coords[goal]!),
     ),
   );
 

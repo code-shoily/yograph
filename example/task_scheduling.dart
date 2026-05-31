@@ -32,15 +32,16 @@ void main() {
   for (var i = 0; i < names.length; i++) {
     graph.addNode(i, data: names[i]);
   }
-  graph
-    ..addEdge(compileUtils, compileCore)
-    ..addEdge(compileUtils, compileUi)
-    ..addEdge(compileCore, compileTests)
-    ..addEdge(compileCore, buildDocs)
-    ..addEdge(compileUi, compileTests)
-    ..addEdge(compileTests, runTests)
-    ..addEdge(runTests, deploy)
-    ..addEdge(buildDocs, deploy);
+  graph.addEdgesFrom([
+    (compileUtils, compileCore),
+    (compileUtils, compileUi),
+    (compileCore, compileTests),
+    (compileCore, buildDocs),
+    (compileUi, compileTests),
+    (compileTests, runTests),
+    (runTests, deploy),
+    (buildDocs, deploy),
+  ]);
 
   // Basic topological sort
   final order = topologicalSort(graph);

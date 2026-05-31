@@ -37,6 +37,30 @@ class SimpleGraph<N, E>
 
   SimpleGraph.undirected() : kind = GraphKind.undirected;
 
+  /// Creates a [SimpleGraph] directly from an iterable of unlabelled/unweighted edges.
+  factory SimpleGraph.fromEdges(
+    Iterable<(int, int)> edges, {
+    GraphKind kind = GraphKind.directed,
+  }) {
+    final graph = kind == GraphKind.directed
+        ? SimpleGraph<N, E>.directed()
+        : SimpleGraph<N, E>.undirected();
+    graph.addEdgesFrom(edges);
+    return graph;
+  }
+
+  /// Creates a [SimpleGraph] directly from an iterable of edges with associated data.
+  factory SimpleGraph.fromEdgesWithData(
+    Iterable<(int, int, E?)> edges, {
+    GraphKind kind = GraphKind.directed,
+  }) {
+    final graph = kind == GraphKind.directed
+        ? SimpleGraph<N, E>.directed()
+        : SimpleGraph<N, E>.undirected();
+    graph.addEdgesWithDataFrom(edges);
+    return graph;
+  }
+
   // -----------------------------------------------------------------------
   // Traversable
   // -----------------------------------------------------------------------

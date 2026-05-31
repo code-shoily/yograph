@@ -3,11 +3,7 @@ import 'package:yograph/yograph.dart';
 
 /// Helper: linear chain 0 -> 1 -> 2 -> 3 -> 4
 SimpleGraph<String, int> _chain() {
-  final g = SimpleGraph<String, int>.directed();
-  for (var i = 0; i < 4; i++) {
-    g.addEdge(i, i + 1);
-  }
-  return g;
+  return SimpleGraph.fromEdges([(0, 1), (1, 2), (2, 3), (3, 4)]);
 }
 
 /// Helper: binary tree
@@ -17,13 +13,7 @@ SimpleGraph<String, int> _chain() {
 ///    / \   \
 ///   3   4   5
 SimpleGraph<String, int> _tree() {
-  final g = SimpleGraph<String, int>.directed();
-  g.addEdge(0, 1);
-  g.addEdge(0, 2);
-  g.addEdge(1, 3);
-  g.addEdge(1, 4);
-  g.addEdge(2, 5);
-  return g;
+  return SimpleGraph.fromEdges([(0, 1), (0, 2), (1, 3), (1, 4), (2, 5)]);
 }
 
 /// Helper: small cyclic graph
@@ -31,11 +21,7 @@ SimpleGraph<String, int> _tree() {
 ///   ^         |
 ///   +---------+
 SimpleGraph<String, int> _cycle() {
-  final g = SimpleGraph<String, int>.directed();
-  g.addEdge(0, 1);
-  g.addEdge(1, 2);
-  g.addEdge(2, 0);
-  return g;
+  return SimpleGraph.fromEdges([(0, 1), (1, 2), (2, 0)]);
 }
 
 /// Helper: DAG for topological sort
@@ -44,13 +30,7 @@ SimpleGraph<String, int> _cycle() {
 ///   v         |
 ///   2 -> 4 ---+
 SimpleGraph<String, int> _dag() {
-  final g = SimpleGraph<String, int>.directed();
-  g.addEdge(0, 1);
-  g.addEdge(0, 2);
-  g.addEdge(1, 3);
-  g.addEdge(2, 4);
-  g.addEdge(4, 3);
-  return g;
+  return SimpleGraph.fromEdges([(0, 1), (0, 2), (1, 3), (2, 4), (4, 3)]);
 }
 
 /// Helper: cyclic graph (has back edge)
@@ -58,11 +38,7 @@ SimpleGraph<String, int> _dag() {
 ///        ^    |
 ///        +----+
 SimpleGraph<String, int> _cyclic() {
-  final g = SimpleGraph<String, int>.directed();
-  g.addEdge(0, 1);
-  g.addEdge(1, 2);
-  g.addEdge(2, 1);
-  return g;
+  return SimpleGraph.fromEdges([(0, 1), (1, 2), (2, 1)]);
 }
 
 void main() {
@@ -309,10 +285,7 @@ void main() {
     test('visits nodes by score', () {
       // Star: 0 -> 1, 0 -> 2, 0 -> 3
       // Scores: 1=10, 2=5, 3=1
-      final g = SimpleGraph<String, int>.directed()
-        ..addEdge(0, 1)
-        ..addEdge(0, 2)
-        ..addEdge(0, 3);
+      final g = SimpleGraph<String, int>.fromEdges([(0, 1), (0, 2), (0, 3)]);
 
       final result = bestFirstWalk(
         g,
@@ -333,10 +306,7 @@ void main() {
 
   group('bestFirstFold', () {
     test('halts early', () {
-      final g = SimpleGraph<String, int>.directed()
-        ..addEdge(0, 1)
-        ..addEdge(0, 2)
-        ..addEdge(0, 3);
+      final g = SimpleGraph<String, int>.fromEdges([(0, 1), (0, 2), (0, 3)]);
 
       final result = bestFirstFold(
         g,
@@ -355,10 +325,11 @@ void main() {
 
   group('randomWalk', () {
     test('with seed is reproducible', () {
-      final g = SimpleGraph<String, int>.undirected()
-        ..addEdge(0, 1)
-        ..addEdge(0, 2)
-        ..addEdge(1, 2);
+      final g = SimpleGraph<String, int>.fromEdges([
+        (0, 1),
+        (0, 2),
+        (1, 2),
+      ], kind: GraphKind.undirected);
 
       final r1 = randomWalk(g, from: 0, steps: 10, seed: 42);
       final r2 = randomWalk(g, from: 0, steps: 10, seed: 42);
@@ -412,8 +383,7 @@ void main() {
         ..addNode(0, data: 'B')
         ..addNode(1, data: 'A')
         ..addNode(2, data: 'C')
-        ..addEdge(0, 2)
-        ..addEdge(1, 2);
+        ..addEdgesFrom([(0, 2), (1, 2)]);
 
       final result = lexicographicalTopologicalSort(
         g,
@@ -431,9 +401,7 @@ void main() {
     });
 
     test('nodes without data fall back to ID comparison', () {
-      final g = SimpleGraph<String, int>.directed()
-        ..addEdge(2, 0)
-        ..addEdge(1, 0);
+      final g = SimpleGraph<String, int>.fromEdges([(2, 0), (1, 0)]);
 
       final result = lexicographicalTopologicalSort(
         g,

@@ -33,13 +33,15 @@ void main() {
   final idC = builder.getId('C')!;
 
   final path = Pathfinding.shortestPath(graph2, idA, idC);
-  print('A → C shortest path: ${path?.nodes.map((id) {
-    // reverse-lookup label by ID
-    for (final label in builder.labels) {
-      if (builder.getId(label) == id) return label;
-    }
-    return id.toString();
-  }).join(' -> ')}');
+  print(
+    'A → C shortest path: ${path?.nodes.map((id) {
+      // reverse-lookup label by ID
+      for (final label in builder.labels) {
+        if (builder.getId(label) == id) return label;
+      }
+      return id.toString();
+    }).join(' -> ')}',
+  );
   print('Weight: ${path?.weight}');
   print('');
 
@@ -80,4 +82,34 @@ void main() {
   print('Nodes: ${autoGraph.nodeIds.toList()}');
   print('Has node 42: ${autoGraph.hasNode(42)}');
   print('Has node 99: ${autoGraph.hasNode(99)}');
+  print('');
+
+  // ── Method 6: Bulk Creation and Extension Helpers (New in V0.2.0) ──
+  print('=== Method 6: Bulk Creation (New in V0.2.0) ===');
+
+  // 1. Instantiate a graph directly from unweighted edges
+  final directGraph = SimpleGraph<void, void>.fromEdges([
+    (1, 2),
+    (2, 3),
+    (3, 4),
+  ], kind: GraphKind.undirected);
+  print('Direct unweighted graph: $directGraph');
+
+  // 2. Instantiate a graph directly from weighted edges using Records (tuples)
+  final weightedGraph = SimpleGraph<void, double>.fromEdgesWithData([
+    (1, 2, 10.5),
+    (2, 3, 5.0),
+  ]);
+  print('Direct weighted graph edges:');
+  for (final id in weightedGraph.nodeIds) {
+    for (final succ in weightedGraph.successors(id)) {
+      print('  $id ─[${weightedGraph.edgeWeight(id, succ)}]─> $succ');
+    }
+  }
+
+  // 3. Bulk insert nodes and edges into an existing graph
+  final graph = SimpleGraph<String, int>.directed()
+    ..addNodesFrom([10, 20, 30])
+    ..addEdgesFrom([(10, 20), (20, 30)]);
+  print('Bulk configured graph: $graph');
 }
