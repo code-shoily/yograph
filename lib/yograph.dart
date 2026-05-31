@@ -33,6 +33,9 @@ export 'src/mst/mst.dart';
 export 'src/centrality/brandes.dart';
 export 'src/centrality/centrality.dart';
 
+// Property
+export 'src/property/health.dart';
+
 // Implementations
 export 'src/simple_graph.dart';
 

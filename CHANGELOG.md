@@ -9,3 +9,5 @@
 - Add Disjoint Set Union implementation and Union Find based algorithms.
 - Add Kruskal's and Prim's algorithms for MST.
 - Add pathfinding implementations - Dijkstra, A*, Bellman-Ford, and Floyd-Warshall.
+- Add Centrality algorithms: Degree, Closeness, Harmonic, Betweenness, Pagerank, Eigenvector, Katz, and Hits.
+- Add health metrics: Diameter, Local efficiency, and Average local efficiency.
