@@ -22,15 +22,27 @@ void main() async {
   print('=== ADVENT OF CODE 2023 - DAY 25: SNOWVERLOAD ===\n');
 
   // 1. Load the puzzle input (fall back to sample if file doesn't exist)
-  final inputFile = File('example/aoc/2023/inputs/day25.txt');
-  String input;
+  String? rawInput;
+  final envSrc = Platform.environment['AOC_INPUT_SRC'];
+  if (envSrc != null && envSrc.isNotEmpty) {
+    final envFile = File('$envSrc/2023_25.txt');
+    if (await envFile.exists()) {
+      print('Reading puzzle input from environment source: ${envFile.path}');
+      rawInput = await envFile.readAsString();
+    }
+  }
 
-  if (await inputFile.exists()) {
-    print('Reading puzzle input from: ${inputFile.path}');
-    input = await inputFile.readAsString();
-  } else {
+  if (rawInput == null) {
+    final localFile = File('example/aoc/2023/inputs/day25.txt');
+    if (await localFile.exists()) {
+      print('Reading puzzle input from local source: ${localFile.path}');
+      rawInput = await localFile.readAsString();
+    }
+  }
+
+  final input = rawInput ?? sampleInput;
+  if (rawInput == null) {
     print('No input file found. Using sample input instead...');
-    input = sampleInput;
   }
 
   // 2. Build the undirected graph
