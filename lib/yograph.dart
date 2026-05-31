@@ -35,6 +35,10 @@ export 'src/centrality/centrality.dart';
 
 // Property
 export 'src/property/health.dart';
+export 'src/property/structure.dart';
+
+// Connectivity
+export 'src/connectivity/connectivity.dart';
 
 // Implementations
 export 'src/simple_graph.dart';

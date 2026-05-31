@@ -1,4 +1,4 @@
-## 0.1.0
+## 0.1.0 - Foundations
 
 - Create the foundational graph structures and base interfaces.
 - Implement the first simple concrete graph implementation: `SimpleGraph`.
@@ -11,3 +11,4 @@
 - Add pathfinding implementations - Dijkstra, A*, Bellman-Ford, and Floyd-Warshall.
 - Add Centrality algorithms: Degree, Closeness, Harmonic, Betweenness, Pagerank, Eigenvector, Katz, and Hits.
 - Add health metrics: Diameter, Local efficiency, and Average local efficiency.
+- Add connectivity algorithms: Bridges and articulation points.
