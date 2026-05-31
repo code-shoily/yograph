@@ -62,6 +62,7 @@ The following table summarizes the high-performance graph solvers migrated from 
 | **2022 / 12** | [Hill Climbing Algorithm](2022/day12.dart) | **21ms** | ~250ms | **12.0x** | Backwards step logic, Forward/Backward BFS Pathfinding |
 | **2022 / 16** | [Proboscidea Volcanium](2022/day16.dart) | **119ms** | ~2,700ms | **22.6x** | `LabeledBuilder`, `FloydWarshall.allPairs`, bitmask state DFS search |
 | **2022 / 24** | [Blizzard Basin](2022/day24.dart) | **148ms** | ~3,500ms | **23.6x** | Cyclic wrap check, fast coordinate bitmask BFS state search |
+| **2024 / 05** | [Print Queue](2024/day05.dart) | **27ms** | ~250ms | **9.2x** | `SimpleGraph.directed`, `topologicalSort` Kahn's algorithm |
 | **2025 / 04** | [Printing Department](2025/day04.dart) | **146ms** | ~900ms | **6.1x** | `GridBuilder.from2DListWithTopology` (`GridTopologies.queen`), `SimpleGraph.removeNode` |
 
 ### 🛠️ Key Architectural Design Patterns Used:
