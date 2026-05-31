@@ -69,6 +69,9 @@ The following table summarizes the high-performance graph solvers migrated from 
 | **2022 / 12** | [Hill Climbing Algorithm](2022/day12.dart) | **39ms** | ~300ms | **7.7x** | `GridBuilder` graph, `Dijkstra.shortestPath` & `Dijkstra.singleSourceDistances` |
 | **2022 / 16** | [Proboscidea Volcanium](2022/day16.dart) | **119ms** | ~2,700ms | **22.6x** | `LabeledBuilder`, `FloydWarshall.allPairs`, bitmask state DFS search |
 | **2022 / 24** | [Blizzard Basin](2022/day24.dart) | **228ms** | ~1,200ms | **5.2x** | `AStar.implicitAStarBy` 3D temporal state-space search, cyclic blizzards |
+| **2023 / 10** | [Pipe Maze](2023/day10.dart) | **73ms** | ~300ms | **4.1x** | `GridBuilder.from2DList` directed, `Dijkstra.singleSourceDistances` loop pruning, scanline crossing parity |
+| **2023 / 17** | [Clumsy Crucible](2023/day17.dart) | **1,510ms** | ~3,200ms | **2.1x** | `AStar.implicitAStarBy` state-space search with turning constraints |
+| **2023 / 23** | [A Long Walk](2023/day23.dart) | **1,271ms** | ~5,800ms | **4.5x** | Graph compression, `SimpleGraph.directed` compressed segments, bitmasked DFS |
 | **2023 / 25** | [Snowverload](2023/day25.dart) | **45ms** | ~650ms | **14.4x** | Minimum cut / Karger's / Stoer-Wagner graph partitioning |
 | **2024 / 05** | [Print Queue](2024/day05.dart) | **27ms** | ~250ms | **9.2x** | `SimpleGraph.directed`, `topologicalSort` Kahn's algorithm |
 | **2024 / 18** | [RAM Run](2024/day18.dart) | **15ms** | ~160ms | **10.6x** | `AStar.implicitAStar` grid pathfinding under falling bytes |
