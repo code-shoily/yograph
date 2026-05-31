@@ -1,0 +1,21 @@
+/// Minimal contract for any structure that can be walked as a graph.
+///
+/// Implementations promise only the ability to enumerate node IDs and
+/// discover outgoing neighbors.  No query or mutation methods are required.
+/// This is the smallest interface that BFS/DFS traversal needs.
+abstract interface class Traversable {
+  /// All node identifiers currently in the graph.
+  Iterable<Object> get nodeIds;
+
+  /// Identifiers reachable directly from [id] via outgoing edges.
+  ///
+  /// Returns an empty iterable if [id] has no outgoing edges or is not
+  /// present in the graph.
+  Iterable<Object> successors(Object id);
+
+  /// Number of nodes in the graph.
+  int get nodeCount;
+
+  /// `true` when the graph contains no nodes.
+  bool get isEmpty;
+}
