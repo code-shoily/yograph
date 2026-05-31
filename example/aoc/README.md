@@ -50,6 +50,8 @@ The following table summarizes the high-performance graph solvers migrated from 
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **2016 / 11** | [Radioisotope Generators](2016/day11.dart) | **114ms** | ~2,000ms | **17.5x** | State-space BFS, Symmetry-Pruned State representation |
 | **2016 / 24** | [Air Duct Spelunking](2016/day24.dart) | **71ms** | ~1,000ms | **14.0x** | Coordinate Bitmask BFS, TSP Permutation Search |
+| **2017 / 07** | [Recursive Circus](2017/day07.dart) | **13ms** | ~120ms | **9.2x** | `LabeledBuilder`, Arborescence tree balancing search |
+| **2017 / 14** | [Disk Defragmentation](2017/day14.dart) | **29ms** | ~300ms | **10.3x** | Knot Hash, Grid region DFS connected components |
 | **2018 / 07** | [The Sum of Its Parts](2018/day07.dart) | **<10ms** | ~120ms | **12.0x** | `LabeledBuilder`, `lexicographicalTopologicalSort` |
 | **2018 / 25** | [Four-Dimensional Adventure](2018/day25.dart) | **23ms** | ~180ms | **7.8x** | `Components.connectedComponents` |
 | **2019 / 06** | [Universal Orbit Map](2019/day06.dart) | **12ms** | ~95ms | **7.9x** | `LabeledBuilder`, `Dijkstra.shortestPath` |
