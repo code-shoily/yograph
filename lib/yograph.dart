@@ -1,4 +1,7 @@
 /// Yograph — a comprehensive graph theory library for Dart.
+///
+/// Graphs use strictly `int` node IDs for algorithmic efficiency.
+/// Use [LabeledBuilder] for ergonomic label-based construction.
 library;
 
 // Core model interfaces
@@ -14,3 +17,6 @@ export 'src/path.dart';
 
 // Implementations
 export 'src/simple_graph.dart';
+
+// Builders
+export 'src/builder/labeled_builder.dart';

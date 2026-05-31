@@ -79,7 +79,7 @@ class SimpleGraph<N, E> implements Walkable<N, E>, WeightedWalkable<N, E>, Bidir
 | In-degree | O(V + E) scan | O(1) — `inEdges[id].length` |
 | Edge count (undirected) | O(V + E) | O(1) — tracked counter |
 
-**Node ID type:** `Object` (anything with `==` and `hashCode`). Common: `String`, `int`.
+**Node ID type:** `int` — strictly integer IDs enable flat arrays, indexed lookups, and primitive-speed iteration inside algorithms. For ergonomic label-based construction, use `LabeledBuilder<L, E>` which maps arbitrary labels to sequential integer IDs `0, 1, 2, ...`.
 
 ### 2.3 Immutability vs. Mutability
 
@@ -468,12 +468,20 @@ final scores = await Centrality.closeness(graph);  // internally uses Isolate.ru
 ```dart
 // Node data type N, edge data type E
 final graph = SimpleGraph<String, int>.directed();
-graph.addNode('A', data: 'Start Node');
-graph.addEdge('A', 'B', data: 10);
+graph.addNode(0, data: 'Start Node');
+graph.addEdge(0, 1, data: 10);
 
 // Unweighted graph: use `Null` for E
 final unweighted = SimpleGraph<String, Null>.undirected();
-unweighted.addEdge('A', 'B');  // data is null, weight defaults to 1.0
+unweighted.addEdge(0, 1);  // data is null, weight defaults to 1.0
+
+// Ergonomic label-based construction
+final builder = LabeledBuilder<String, int>.directed()
+  ..addEdge('home', 'work', data: 10)
+  ..addEdge('work', 'gym', data: 5);
+final graph = builder.toGraph();
+final path = dijkstra(graph, builder.getId('home')!, builder.getId('gym')!);
+final labels = path.nodes.map((id) => graph.nodeData(id)!).toList();
 ```
 
 **Edge weight derivation:** `edgeWeight(from, to)` checks if edge data implements `num` and extracts the value; otherwise returns `1.0`. For custom weight schemes, algorithms will accept an optional `double Function(E)? weightFn` parameter.
@@ -698,8 +706,8 @@ GraphBrowser(
 1. **Should we use a custom `Result<T>` type?**
    - **Resolved:** Exceptions for programmer errors, nullable returns for "not found".
 
-2. **Node ID type: `Object` or generic `ID extends Object`?**
-   - **Resolved:** `Object` IDs. Interfaces and `SimpleGraph` use `Object` for node IDs. Type safety on node/edge *data* is provided by generics `N` and `E`.
+2. **Node ID type: `Object` or `int`?**
+   - **Resolved:** `int` IDs for algorithmic performance (flat arrays, indexed lookups). `LabeledBuilder<L, E>` bridges ergonomic label-based construction to integer IDs.
 
 3. **Should `addEdge` auto-create missing nodes?**
    - **Resolved:** Yes, `addEdge` auto-creates by default (YogEx `add_edge_ensure` behaviour). Callers who need strictness can check `hasNode` first.

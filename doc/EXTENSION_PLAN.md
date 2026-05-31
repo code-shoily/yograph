@@ -33,6 +33,8 @@ The current `SimpleGraph` implementation in `lib/src/simple_graph.dart` is remar
 
 The greatest strength of the capability interfaces is that **they isolate the algorithm implementations from the storage representations.**
 
+All node IDs are strictly `int`. This enables flat arrays, `Int32List` / `Float64List` helper state, and primitive-speed iteration inside algorithms. For ergonomic label-based construction, use `LabeledBuilder<L, E>` which maps arbitrary labels to sequential integer IDs `0, 1, 2, ...` and stores the original label as node data.
+
 Here is how to implement the planned variants:
 
 ```mermaid

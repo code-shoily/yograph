@@ -20,16 +20,16 @@ abstract class GraphModel<N, E> {
   bool get isEmpty;
   int get nodeCount;
   int get edgeCount;
-  Iterable<Object> get nodeIds;
-  bool hasNode(Object id);
-  N? nodeData(Object id);
-  bool hasEdge(Object from, Object to);
-  E? edgeData(Object from, Object to);
-  double edgeWeight(Object from, Object to);
-  Iterable<Object> successors(Object id);
-  Iterable<Object> predecessors(Object id);
-  int outDegree(Object id);
-  int inDegree(Object id);
+  Iterable<int> get nodeIds;
+  bool hasNode(int id);
+  N? nodeData(int id);
+  bool hasEdge(int from, int to);
+  E? edgeData(int from, int to);
+  double edgeWeight(int from, int to);
+  Iterable<int> successors(int id);
+  Iterable<int> predecessors(int id);
+  int outDegree(int id);
+  int inDegree(int id);
 }
 
 // =============================================================================
@@ -42,7 +42,7 @@ abstract class GraphModel<N, E> {
 //   - BOTH N and E are class-level generic parameters on ALL interfaces.
 //   - nodeData/edgeData return N?/E? (nullable), using hasNode/hasEdge to
 //     distinguish "missing" from "present but null data".
-//   - Internal maps are Map<Object, N?> and Map<Object, Map<Object, E?>>
+//   - Internal maps are Map<int, N?> and Map<int, Map<int, E?>>
 //     so null data can be stored without runtime casts.
 //   - Algorithm signatures propagate <N, E> generics; they never use raw
 //     types or default to dynamic.
@@ -52,8 +52,8 @@ abstract class GraphModel<N, E> {
 // ---------------------------------------------------------------------------
 
 abstract class Traversable {
-  Iterable<Object> get nodeIds;
-  Iterable<Object> successors(Object id);
+  Iterable<int> get nodeIds;
+  Iterable<int> successors(int id);
   int get nodeCount;
   bool get isEmpty;
 }
@@ -61,23 +61,23 @@ abstract class Traversable {
 /// Queryable is parameterized over BOTH node data (N) and edge data (E).
 /// nodeData takes NO method-level generic — it returns the class-level N?.
 abstract class Queryable<N, E> {
-  bool hasNode(Object id);
-  N? nodeData(Object id);
-  bool hasEdge(Object from, Object to);
-  E? edgeData(Object from, Object to);
-  double edgeWeight(Object from, Object to);
+  bool hasNode(int id);
+  N? nodeData(int id);
+  bool hasEdge(int from, int to);
+  E? edgeData(int from, int to);
+  double edgeWeight(int from, int to);
 }
 
 abstract class Reversible<E> implements Traversable {
-  Iterable<Object> predecessors(Object id);
-  int inDegree(Object id);
+  Iterable<int> predecessors(int id);
+  int inDegree(int id);
 }
 
 abstract class Mutable<N, E> implements Traversable, Queryable<N, E> {
-  void addNode(Object id, {N? data});
-  void removeNode(Object id);
-  void addEdge(Object from, Object to, {E? data});
-  void removeEdge(Object from, Object to);
+  void addNode(int id, {N? data});
+  void removeNode(int id);
+  void addEdge(int from, int to, {E? data});
+  void removeEdge(int from, int to);
 }
 
 // ---------------------------------------------------------------------------
@@ -96,28 +96,24 @@ abstract class Bidirectional<N, E>
 // ---------------------------------------------------------------------------
 
 class PathResult {
-  final List<Object> nodes;
+  final List<int> nodes;
   final double weight;
   PathResult(this.nodes, this.weight);
 }
 
-List<Object>? bfsPath<N, E>(Walkable<N, E> graph, Object from, Object to) {
+List<int>? bfsPath<N, E>(Walkable<N, E> graph, int from, int to) {
   return null;
 }
 
-PathResult? dijkstra<N, E>(
-  WeightedWalkable<N, E> graph,
-  Object from,
-  Object to,
-) {
+PathResult? dijkstra<N, E>(WeightedWalkable<N, E> graph, int from, int to) {
   return null;
 }
 
-Map<Object, double> betweenness<N, E>(Bidirectional<N, E> graph) {
+Map<int, double> betweenness<N, E>(Bidirectional<N, E> graph) {
   return {};
 }
 
-List<List<Object>> kosaraju<N, E>(Bidirectional<N, E> graph) {
+List<List<int>> kosaraju<N, E>(Bidirectional<N, E> graph) {
   return [];
 }
 
@@ -135,9 +131,9 @@ class SimpleGraph<N, E>
         Bidirectional<N, E>,
         Mutable<N, E> {
   final GraphKind kind;
-  final Map<Object, N?> _nodes = {};
-  final Map<Object, Map<Object, E?>> _out = {};
-  final Map<Object, Map<Object, E?>> _in = {};
+  final Map<int, N?> _nodes = {};
+  final Map<int, Map<int, E?>> _out = {};
+  final Map<int, Map<int, E?>> _in = {};
   int _edgeCount = 0;
 
   int get edgeCount => _edgeCount;
@@ -152,22 +148,22 @@ class SimpleGraph<N, E>
   int get nodeCount => _nodes.length;
 
   @override
-  Iterable<Object> get nodeIds => _nodes.keys;
+  Iterable<int> get nodeIds => _nodes.keys;
 
   @override
-  bool hasNode(Object id) => _nodes.containsKey(id);
+  bool hasNode(int id) => _nodes.containsKey(id);
 
   @override
-  N? nodeData(Object id) => _nodes[id];
+  N? nodeData(int id) => _nodes[id];
 
   @override
-  bool hasEdge(Object from, Object to) => _out[from]?.containsKey(to) ?? false;
+  bool hasEdge(int from, int to) => _out[from]?.containsKey(to) ?? false;
 
   @override
-  E? edgeData(Object from, Object to) => _out[from]?[to];
+  E? edgeData(int from, int to) => _out[from]?[to];
 
   @override
-  double edgeWeight(Object from, Object to) {
+  double edgeWeight(int from, int to) {
     if (!hasEdge(from, to)) {
       throw StateError('No edge from $from to $to');
     }
@@ -177,23 +173,23 @@ class SimpleGraph<N, E>
   }
 
   @override
-  Iterable<Object> successors(Object id) => _out[id]?.keys ?? const [];
+  Iterable<int> successors(int id) => _out[id]?.keys ?? const [];
 
   @override
-  Iterable<Object> predecessors(Object id) => _in[id]?.keys ?? const [];
+  Iterable<int> predecessors(int id) => _in[id]?.keys ?? const [];
 
   @override
-  int inDegree(Object id) => _in[id]?.length ?? 0;
+  int inDegree(int id) => _in[id]?.length ?? 0;
 
   @override
-  void addNode(Object id, {N? data}) {
+  void addNode(int id, {N? data}) {
     _nodes[id] = data;
     _out.putIfAbsent(id, () => {});
     _in.putIfAbsent(id, () => {});
   }
 
   @override
-  void addEdge(Object from, Object to, {E? data}) {
+  void addEdge(int from, int to, {E? data}) {
     if (!hasNode(from)) addNode(from);
     if (!hasNode(to)) addNode(to);
 
@@ -210,11 +206,11 @@ class SimpleGraph<N, E>
   }
 
   @override
-  void removeNode(Object id) {
-    for (final to in List<Object>.from(_out[id]!.keys)) {
+  void removeNode(int id) {
+    for (final to in List<int>.from(_out[id]!.keys)) {
       removeEdge(id, to);
     }
-    for (final from in List<Object>.from(_in[id]!.keys)) {
+    for (final from in List<int>.from(_in[id]!.keys)) {
       removeEdge(from, id);
     }
     _nodes.remove(id);
@@ -223,7 +219,7 @@ class SimpleGraph<N, E>
   }
 
   @override
-  void removeEdge(Object from, Object to) {
+  void removeEdge(int from, int to) {
     if (_out[from]?.containsKey(to) != true) return;
     _out[from]!.remove(to);
     _in[to]!.remove(from);
@@ -242,11 +238,11 @@ class SimpleGraph<N, E>
 
 class SingleMapGraph<N, E>
     implements Walkable<N, E>, WeightedWalkable<N, E>, Mutable<N, E> {
-  final Map<Object, N?> _nodes = {};
-  final Map<Object, Map<Object, E?>> _out = {};
+  final Map<int, N?> _nodes = {};
+  final Map<int, Map<int, E?>> _out = {};
 
   @override
-  Iterable<Object> get nodeIds => _nodes.keys;
+  Iterable<int> get nodeIds => _nodes.keys;
 
   @override
   int get nodeCount => _nodes.length;
@@ -255,19 +251,19 @@ class SingleMapGraph<N, E>
   bool get isEmpty => _nodes.isEmpty;
 
   @override
-  bool hasNode(Object id) => _nodes.containsKey(id);
+  bool hasNode(int id) => _nodes.containsKey(id);
 
   @override
-  N? nodeData(Object id) => _nodes[id];
+  N? nodeData(int id) => _nodes[id];
 
   @override
-  bool hasEdge(Object from, Object to) => _out[from]?.containsKey(to) ?? false;
+  bool hasEdge(int from, int to) => _out[from]?.containsKey(to) ?? false;
 
   @override
-  E? edgeData(Object from, Object to) => _out[from]?[to];
+  E? edgeData(int from, int to) => _out[from]?[to];
 
   @override
-  double edgeWeight(Object from, Object to) {
+  double edgeWeight(int from, int to) {
     if (!hasEdge(from, to)) {
       throw StateError('No edge from $from to $to');
     }
@@ -277,28 +273,28 @@ class SingleMapGraph<N, E>
   }
 
   @override
-  Iterable<Object> successors(Object id) => _out[id]?.keys ?? const [];
+  Iterable<int> successors(int id) => _out[id]?.keys ?? const [];
 
   @override
-  void addNode(Object id, {N? data}) {
+  void addNode(int id, {N? data}) {
     _nodes[id] = data;
     _out.putIfAbsent(id, () => {});
   }
 
   @override
-  void addEdge(Object from, Object to, {E? data}) {
+  void addEdge(int from, int to, {E? data}) {
     if (!hasNode(from)) addNode(from);
     if (!hasNode(to)) addNode(to);
     _out[from]![to] = data;
   }
 
   @override
-  void removeNode(Object id) {
+  void removeNode(int id) {
     /* ... */
   }
 
   @override
-  void removeEdge(Object from, Object to) {
+  void removeEdge(int from, int to) {
     /* ... */
   }
 }
@@ -318,24 +314,24 @@ class SingleMapGraph<N, E>
 void main() {
   // --- SimpleGraph (full dual-map) ---
   final full = SimpleGraph<String, int>.directed()
-    ..addNode('A', data: 'Start')
-    ..addNode('B', data: 'End')
-    ..addEdge('A', 'B', data: 42);
+    ..addNode(0, data: 'Start')
+    ..addNode(1, data: 'End')
+    ..addEdge(0, 1, data: 42);
 
   // All of these compile with strict generics:
-  bfsPath<String, int>(full, 'A', 'B');
-  dijkstra<String, int>(full, 'A', 'B');
+  bfsPath<String, int>(full, 0, 1);
+  dijkstra<String, int>(full, 0, 1);
   betweenness<String, int>(full);
 
   // --- SingleMapGraph (out-edges only) ---
   final dag = SingleMapGraph<String, int>()
-    ..addNode('A')
-    ..addNode('B')
-    ..addEdge('A', 'B');
+    ..addNode(0)
+    ..addNode(1)
+    ..addEdge(0, 1);
 
   // These compile:
-  bfsPath<String, int>(dag, 'A', 'B');
-  dijkstra<String, int>(dag, 'A', 'B');
+  bfsPath<String, int>(dag, 0, 1);
+  dijkstra<String, int>(dag, 0, 1);
 
   // This is a COMPILE ERROR:
   // betweenness<String, int>(dag);
