@@ -222,5 +222,92 @@ void main() {
       g.addEdge(0, 2); // chord
       expect(Structure.isChordal(g), isTrue);
     });
+
+    test('directed or empty boundary cases', () {
+      final empty = SimpleGraph.undirected();
+      expect(Structure.isChordal(empty), isTrue);
+
+      final single = SimpleGraph.undirected()..addNode(0);
+      expect(Structure.isChordal(single), isTrue);
+
+      final dir = SimpleGraph.directed()..addEdge(0, 1);
+      expect(Structure.isChordal(dir), isFalse);
+    });
+  });
+
+  group('Structure.isBranching', () {
+    test('valid branching', () {
+      final g = SimpleGraph.directed();
+      g.addEdge(0, 1);
+      g.addEdge(0, 2);
+      g.addEdge(3, 4);
+      expect(Structure.isBranching(g), isTrue);
+    });
+
+    test('invalid branching — cycle', () {
+      final g = SimpleGraph.directed();
+      g.addEdge(0, 1);
+      g.addEdge(1, 0);
+      expect(Structure.isBranching(g), isFalse);
+    });
+
+    test('invalid branching — in-degree > 1', () {
+      final g = SimpleGraph.directed();
+      g.addEdge(0, 1);
+      g.addEdge(2, 1);
+      expect(Structure.isBranching(g), isFalse);
+    });
+
+    test('undirected is not branching', () {
+      final g = SimpleGraph.undirected()..addEdge(0, 1);
+      expect(Structure.isBranching(g), isFalse);
+    });
+  });
+
+  group('Structure forest and arborescence boundary checks', () {
+    test('directed forest check fails', () {
+      final g = SimpleGraph.directed()..addEdge(0, 1);
+      expect(Structure.isForest(g), isFalse);
+    });
+
+    test('undirected arborescence check fails', () {
+      final g = SimpleGraph.undirected()..addEdge(0, 1);
+      expect(Structure.isArborescence(g), isFalse);
+      expect(Structure.arborescenceRoot(g), isNull);
+    });
+
+    test('empty arborescence is false', () {
+      final g = SimpleGraph.directed();
+      expect(Structure.isArborescence(g), isFalse);
+    });
+
+    test('directed arborescence with multiple roots', () {
+      final g = SimpleGraph.directed()
+        ..addNode(0)
+        ..addNode(1);
+      expect(Structure.arborescenceRoot(g), isNull);
+    });
+  });
+
+  group('Structure regular and degree boundaries', () {
+    test('directed regular', () {
+      final g = SimpleGraph.directed()
+        ..addEdge(0, 1)
+        ..addEdge(1, 0);
+      expect(Structure.isRegular(g, 2), isTrue);
+    });
+
+    test('minimumDegree directed and empty', () {
+      final empty = SimpleGraph.directed();
+      expect(Structure.minimumDegree(empty), 0);
+
+      final g = SimpleGraph.directed()
+        ..addEdge(0, 1)
+        ..addEdge(1, 2);
+      expect(
+        Structure.minimumDegree(g),
+        1,
+      ); // node 0 has out-deg 1, node 2 has in-deg 1
+    });
   });
 }

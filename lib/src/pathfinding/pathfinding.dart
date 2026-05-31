@@ -28,9 +28,7 @@ import 'strategy.dart';
 ///   strategy: AStar(heuristic: manhattan),
 /// );
 /// ```
-class Pathfinding {
-  Pathfinding._();
-
+abstract final class Pathfinding {
   /// Finds the shortest path from [from] to [to] using the given [strategy].
   ///
   /// Returns `null` when [from] or [to] does not exist, or when no path

@@ -36,6 +36,10 @@ export 'src/centrality/centrality.dart';
 // Property
 export 'src/property/health.dart';
 export 'src/property/structure.dart';
+export 'src/property/bipartite.dart';
+export 'src/property/clique.dart';
+export 'src/property/cyclicity.dart';
+export 'src/property/eulerian.dart';
 
 // Connectivity
 export 'src/connectivity/connectivity.dart';

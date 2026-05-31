@@ -244,6 +244,37 @@ void main() {
       final shells = KCore.shellDecomposition(g);
       expect(shells[3]!.length, 4);
     });
+
+    test('empty and directed graph boundary checks', () {
+      final emptyU = SimpleGraph.undirected();
+      expect(KCore.detect(emptyU, 2).nodeCount, 0);
+      expect(KCore.coreNumbers(emptyU), isEmpty);
+      expect(KCore.degeneracy(emptyU), 0);
+
+      final emptyD = SimpleGraph.directed();
+      expect(KCore.detect(emptyD, 2).nodeCount, 0);
+
+      final gDir = SimpleGraph.fromEdges([
+        (0, 1),
+        (1, 2),
+        (2, 0),
+        (2, 3),
+      ], kind: GraphKind.directed);
+      // In directed graphs, degree is inDegree + outDegree:
+      // Node 0: in 1, out 1 -> deg 2
+      // Node 1: in 1, out 1 -> deg 2
+      // Node 2: in 1, out 2 -> deg 3
+      // Node 3: in 1, out 0 -> deg 1
+      final cores = KCore.coreNumbers(gDir);
+      expect(cores[3], 1);
+      expect(cores[0], 2);
+      expect(cores[1], 2);
+      expect(cores[2], 2);
+
+      expect(KCore.detect(gDir, 2).nodeCount, 3);
+      expect(KCore.degeneracy(gDir), 2);
+      expect(KCore.shellDecomposition(gDir)[2]!.length, 3);
+    });
   });
 
   group('Reachability', () {
@@ -282,6 +313,20 @@ void main() {
       expect(counts[1], 3);
       expect(counts[2], 3);
       expect(counts[3], 0);
+    });
+
+    test('cyclic graph ancestors', () {
+      final g = SimpleGraph.fromEdges([(0, 1), (1, 2), (2, 0), (2, 3)]);
+      final counts = Reachability.counts(
+        g,
+        direction: ReachabilityDirection.ancestors,
+      );
+      // Node 3 can be reached by 0, 1, 2 -> 3 ancestors
+      // Node 0, 1, 2 can be reached by each other -> 2 ancestors
+      expect(counts[3], 3);
+      expect(counts[0], 2);
+      expect(counts[1], 2);
+      expect(counts[2], 2);
     });
 
     test('empty graph', () {

@@ -491,4 +491,47 @@ void main() {
       expect(g.kind, GraphKind.undirected);
     });
   });
+
+  group('SimpleGraph extra boundary cases for 100% coverage', () {
+    test('undirected factory fromEdgesWithData', () {
+      final g = SimpleGraph<void, double>.fromEdgesWithData([
+        (0, 1, 3.5),
+        (1, 2, 7.2),
+      ], kind: GraphKind.undirected);
+      expect(g.kind, GraphKind.undirected);
+      expect(g.edgeData(0, 1), 3.5);
+      expect(g.edgeData(1, 0), 3.5);
+    });
+
+    test('removeEdge on non-existent source node', () {
+      final g = SimpleGraph<void, void>.directed();
+      g.removeEdge(99, 100); // Should return immediately without throwing
+      expect(g.edgeCount, 0);
+    });
+
+    test('addEdge when endpoints already exist but edge is new', () {
+      final g = SimpleGraph<void, void>.directed();
+      g.addNode(0);
+      g.addNode(1);
+      expect(g.hasEdge(0, 1), isFalse);
+      g.addEdge(0, 1);
+      expect(g.hasEdge(0, 1), isTrue);
+    });
+
+    test(
+      'removeNode removes all incoming and outgoing edges in directed graph',
+      () {
+        final g = SimpleGraph<void, void>.directed();
+        g.addEdge(0, 1);
+        g.addEdge(2, 0);
+        g.addEdge(3, 4);
+
+        g.removeNode(0);
+        expect(g.hasNode(0), isFalse);
+        expect(g.hasEdge(0, 1), isFalse);
+        expect(g.hasEdge(2, 0), isFalse);
+        expect(g.edgeCount, 1); // 3 -> 4 remains
+      },
+    );
+  });
 }
