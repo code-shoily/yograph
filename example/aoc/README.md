@@ -63,6 +63,7 @@ The following table summarizes the high-performance graph solvers migrated from 
 | **2019 / 06** | [Universal Orbit Map](2019/day06.dart) | **12ms** | ~95ms | **7.9x** | `LabeledBuilder`, `Dijkstra.shortestPath` |
 | **2019 / 18** | [Many-Worlds Interpretation](2019/day18.dart) | **157ms** | ~2,000ms | **12.7x** | Bitmask search space representation, `AStar.implicitAStar` |
 | **2020 / 07** | [Handy Haversacks](2020/day07.dart) | **15ms** | ~110ms | **7.3x** | `LabeledBuilder`, `Bidirectional` predecessor BFS traversal |
+| **2021 / 09** | [Smoke Basin](2021/day09.dart) | **49ms** | ~300ms | **6.1x** | `GridBuilder.from2DList` rook graph, `Components.connectedComponents` on sub-graph |
 | **2021 / 15** | [Chiton](2021/day15.dart) | **202ms** | ~2,000ms | **10.0x** | Integer-packed coordinate states, `AStar.implicitAStarBy` |
 | **2022 / 16** | [Proboscidea Volcanium](2022/day16.dart) | **119ms** | ~2,700ms | **22.6x** | `LabeledBuilder`, `FloydWarshall.allPairs`, bitmask state DFS search |
 | **2023 / 25** | [Snowverload](2023/day25.dart) | **45ms** | ~650ms | **14.4x** | Minimum cut / Karger's / Stoer-Wagner graph partitioning |
