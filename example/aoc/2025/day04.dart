@@ -35,7 +35,7 @@ void main() async {
   return (solvePart1(graph1), solvePart2(graph2));
 }
 
-int solvePart1(SimpleGraph<String, Null> graph) {
+int solvePart1(SimpleGraph<String, double> graph) {
   var count = 0;
   for (final id in graph.nodeIds) {
     if (graph.successors(id).length < 4) {
@@ -45,7 +45,7 @@ int solvePart1(SimpleGraph<String, Null> graph) {
   return count;
 }
 
-int solvePart2(SimpleGraph<String, Null> graph) {
+int solvePart2(SimpleGraph<String, double> graph) {
   final removable = <int>[];
   for (final id in graph.nodeIds) {
     if (graph.successors(id).length < 4) {
@@ -72,47 +72,25 @@ int solvePart2(SimpleGraph<String, Null> graph) {
   return count;
 }
 
-SimpleGraph<String, Null> _buildGraph(List<String> lines) {
-  final graph = SimpleGraph<String, Null>.undirected();
-  final rows = lines.length;
-  final cols = lines[0].length;
+SimpleGraph<String, double> _buildGraph(List<String> lines) {
+  final gridData = lines.map((line) => line.split('')).toList();
 
-  for (var r = 0; r < rows; r++) {
-    final line = lines[r];
-    for (var c = 0; c < cols; c++) {
-      if (line[c] == '@') {
-        graph.addNode(_pack(r, c), data: '@');
-      }
-    }
-  }
+  final gridGraph = GridBuilder.from2DListWithTopology(
+    gridData,
+    GridTopologies.queen,
+    topologyName: 'queen',
+    directed: false,
+    canMove: (fromCell, toCell) => fromCell == '@' && toCell == '@',
+  );
 
-  final directions = const [
-    (-1, -1),
-    (-1, 0),
-    (-1, 1),
-    (0, -1),
-    (0, 1),
-    (1, -1),
-    (1, 0),
-    (1, 1),
-  ];
+  final graph = gridGraph.toGraph();
 
-  for (final id in graph.nodeIds) {
-    final (r, c) = _unpack(id);
-    for (final (dr, dc) in directions) {
-      final nr = r + dr;
-      final nc = c + dc;
-      if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-        if (lines[nr][nc] == '@') {
-          graph.addEdge(id, _pack(nr, nc));
-        }
-      }
+  // Filter out any nodes that are not '@'
+  for (final id in List<int>.from(graph.nodeIds)) {
+    if (graph.nodeData(id) != '@') {
+      graph.removeNode(id);
     }
   }
 
   return graph;
 }
-
-int _pack(int r, int c) => (r << 16) | c;
-
-(int, int) _unpack(int id) => (id >> 16, id & 0xFFFF);
