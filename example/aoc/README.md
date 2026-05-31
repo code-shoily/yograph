@@ -58,7 +58,10 @@ The following table summarizes the high-performance graph solvers migrated from 
 | **2019 / 18** | [Many-Worlds Interpretation](2019/day18.dart) | **157ms** | ~2,000ms | **12.7x** | Bitmask search space state representation, `AStar.implicitAStar` |
 | **2020 / 07** | [Handy Haversacks](2020/day07.dart) | **15ms** | ~110ms | **7.3x** | `LabeledBuilder`, `Bidirectional` predecessor BFS traversal |
 | **2021 / 15** | [Chiton](2021/day15.dart) | **202ms** | ~2,000ms | **10.0x** | Integer-packed coordinate states, `AStar.implicitAStarBy` |
+| **2022 / 08** | [Treetop Tree House](2022/day08.dart) | **6ms** | ~150ms | **25.0x** | Cardinal directions straight-line walks, boundary checks |
 | **2022 / 12** | [Hill Climbing Algorithm](2022/day12.dart) | **21ms** | ~250ms | **12.0x** | Backwards step logic, Forward/Backward BFS Pathfinding |
+| **2022 / 16** | [Proboscidea Volcanium](2022/day16.dart) | **119ms** | ~2,700ms | **22.6x** | `LabeledBuilder`, `FloydWarshall.allPairs`, bitmask state DFS search |
+| **2022 / 24** | [Blizzard Basin](2022/day24.dart) | **148ms** | ~3,500ms | **23.6x** | Cyclic wrap check, fast coordinate bitmask BFS state search |
 | **2025 / 04** | [Printing Department](2025/day04.dart) | **146ms** | ~900ms | **6.1x** | `GridBuilder.from2DListWithTopology` (`GridTopologies.queen`), `SimpleGraph.removeNode` |
 
 ### 🛠️ Key Architectural Design Patterns Used:
