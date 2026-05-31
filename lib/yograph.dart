@@ -1,8 +1,16 @@
-/// Support for doing something awesome.
-///
-/// More dartdocs go here.
+/// Yograph — a comprehensive graph theory library for Dart.
 library;
 
-export 'src/yograph_base.dart';
+// Core model interfaces
+export 'src/model/graph_kind.dart';
+export 'src/model/traversable.dart';
+export 'src/model/queryable.dart';
+export 'src/model/reversible.dart';
+export 'src/model/mutable.dart';
+export 'src/model/roles.dart';
 
-// TODO: Export any libraries intended for clients of this package.
+// Result types
+export 'src/path.dart';
+
+// Implementations
+export 'src/simple_graph.dart';
