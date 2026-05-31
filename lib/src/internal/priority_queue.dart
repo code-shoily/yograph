@@ -45,8 +45,7 @@ class PriorityQueue<T> {
     while (index < halfLength) {
       var child = index * 2 + 1;
       final right = child + 1;
-      if (right < _heap.length &&
-          _compare(_heap[right], _heap[child]) < 0) {
+      if (right < _heap.length && _compare(_heap[right], _heap[child]) < 0) {
         child = right;
       }
       if (_compare(value, _heap[child]) <= 0) break;

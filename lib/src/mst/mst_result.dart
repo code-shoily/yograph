@@ -12,8 +12,8 @@ class MstResult {
     required this.edges,
     required this.nodeCount,
     required this.algorithm,
-  })  : totalWeight = edges.fold(0.0, (sum, e) => sum + e.weight),
-        edgeCount = edges.length;
+  }) : totalWeight = edges.fold(0.0, (sum, e) => sum + e.weight),
+       edgeCount = edges.length;
 
   factory MstResult.fromEdges(
     List<MstEdge> edges,

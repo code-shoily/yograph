@@ -23,9 +23,7 @@ class DisjointSet<E> {
   final Map<E, E> _parents;
   final Map<E, int> _ranks;
 
-  DisjointSet()
-      : _parents = {},
-        _ranks = {};
+  DisjointSet() : _parents = {}, _ranks = {};
 
   /// Adds [element] as a new singleton set.
   ///

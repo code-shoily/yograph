@@ -88,10 +88,7 @@ class MST {
   /// **Time Complexity:** O(E log V)
   ///
   /// Throws [ArgumentError] if [graph] is directed.
-  static MstResult prim<N, E>(
-    WeightedWalkable<N, E> graph, {
-    int? from,
-  }) {
+  static MstResult prim<N, E>(WeightedWalkable<N, E> graph, {int? from}) {
     _requireUndirected(graph);
 
     if (graph.isEmpty) {
@@ -103,9 +100,7 @@ class MST {
       return MstResult.fromEdges([], 'prim', graph.nodeCount);
     }
 
-    final pq = PriorityQueue<MstEdge>(
-      (a, b) => a.weight.compareTo(b.weight),
-    );
+    final pq = PriorityQueue<MstEdge>((a, b) => a.weight.compareTo(b.weight));
 
     final visited = <int>{start};
     final mstEdges = <MstEdge>[];
@@ -138,10 +133,7 @@ class MST {
   /// Same as [prim] but selects the heaviest edges first.
   ///
   /// **Time Complexity:** O(E log V)
-  static MstResult primMax<N, E>(
-    WeightedWalkable<N, E> graph, {
-    int? from,
-  }) {
+  static MstResult primMax<N, E>(WeightedWalkable<N, E> graph, {int? from}) {
     _requireUndirected(graph);
 
     if (graph.isEmpty) {
@@ -153,9 +145,7 @@ class MST {
       return MstResult.fromEdges([], 'prim_max', graph.nodeCount);
     }
 
-    final pq = PriorityQueue<MstEdge>(
-      (a, b) => b.weight.compareTo(a.weight),
-    );
+    final pq = PriorityQueue<MstEdge>((a, b) => b.weight.compareTo(a.weight));
 
     final visited = <int>{start};
     final mstEdges = <MstEdge>[];

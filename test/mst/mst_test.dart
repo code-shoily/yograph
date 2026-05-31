@@ -63,8 +63,7 @@ void main() {
     });
 
     test('single edge', () {
-      final g = SimpleGraph<String, int>.undirected()
-        ..addEdge(0, 1, data: 5);
+      final g = SimpleGraph<String, int>.undirected()..addEdge(0, 1, data: 5);
       final result = MST.kruskal(g);
       expect(result.totalWeight, 5.0);
       expect(result.edgeCount, 1);
@@ -92,8 +91,7 @@ void main() {
     });
 
     test('throws on directed graph', () {
-      final g = SimpleGraph<String, int>.directed()
-        ..addEdge(0, 1, data: 1);
+      final g = SimpleGraph<String, int>.directed()..addEdge(0, 1, data: 1);
       expect(() => MST.kruskal(g), throwsArgumentError);
     });
   });
@@ -108,8 +106,7 @@ void main() {
     });
 
     test('throws on directed graph', () {
-      final g = SimpleGraph<String, int>.directed()
-        ..addEdge(0, 1, data: 1);
+      final g = SimpleGraph<String, int>.directed()..addEdge(0, 1, data: 1);
       expect(() => MST.kruskalMax(g), throwsArgumentError);
     });
   });
@@ -158,8 +155,7 @@ void main() {
     });
 
     test('throws on directed graph', () {
-      final g = SimpleGraph<String, int>.directed()
-        ..addEdge(0, 1, data: 1);
+      final g = SimpleGraph<String, int>.directed()..addEdge(0, 1, data: 1);
       expect(() => MST.prim(g), throwsArgumentError);
     });
   });
@@ -188,8 +184,7 @@ void main() {
     });
 
     test('throws on directed graph', () {
-      final g = SimpleGraph<String, int>.directed()
-        ..addEdge(0, 1, data: 1);
+      final g = SimpleGraph<String, int>.directed()..addEdge(0, 1, data: 1);
       expect(() => MST.primMax(g), throwsArgumentError);
     });
   });
