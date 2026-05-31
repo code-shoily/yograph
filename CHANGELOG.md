@@ -18,3 +18,4 @@
 - Add Max-Flow algorithms: Edmonds-Karp, Dinic, and Push-Relabel.
 - Add Min-Cut algorithms: s-t Min-Cut and global Min-Cut.
 - Add `GridBuilder` and `GridGraph` classes for working with 2D grid structures.
+- Add AoC examples for 2015-2024.
