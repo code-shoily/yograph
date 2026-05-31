@@ -18,24 +18,26 @@ frs: qnr lhk lsr
 ''';
 
 void main() async {
-  final (input, _) = await loadInput(
+  final (input, isSample) = await loadInput(
     year: 2023,
     day: 25,
     sampleInput: sampleInput,
   );
-  final graph = parse(input);
-  final (p1, p2) = solve(graph);
+  final (p1, p2) = solve(input, isSample);
   print('($p1, $p2)');
+}
+
+(int, String) solve(String rawInput, bool isSample) {
+  final parsed = parse(rawInput);
+  return (solvePart1(parsed), solvePart2(parsed));
 }
 
 SimpleGraph<String, double> parse(String input) {
   final builder = LabeledBuilder<String, double>.undirected();
-  final lines = input.trim().split('\n');
-  for (final line in lines) {
-    if (line.trim().isEmpty) continue;
+  for (final line in getLines(input)) {
     final parts = line.split(': ');
-    final from = parts[0].trim();
-    final toComponents = parts[1].trim().split(' ');
+    final from = parts[0];
+    final toComponents = parts[1].split(' ');
     for (final to in toComponents) {
       builder.addEdge(from, to, data: 1.0);
     }
@@ -43,8 +45,11 @@ SimpleGraph<String, double> parse(String input) {
   return builder.toGraph() as SimpleGraph<String, double>;
 }
 
-(int, String) solve(SimpleGraph<String, double> graph) {
+int solvePart1(SimpleGraph<String, double> graph) {
   final result = MinCut.globalMinCut(graph);
-  final p1 = result.sourceSideSize * result.sinkSideSize;
-  return (p1, 'Balanced');
+  return result.sourceSideSize * result.sinkSideSize;
+}
+
+String solvePart2(SimpleGraph<String, double> graph) {
+  return 'Balanced';
 }

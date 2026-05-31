@@ -35,29 +35,35 @@ void main() async {
     day: 18,
     sampleInput: sampleInput,
   );
-  final parsed = parse(input);
-  final (p1, p2) = solve(parsed, isSample);
+  final (p1, p2) = solve(input, isSample);
   print('($p1, $p2)');
+}
+
+(int, String) solve(String rawInput, bool isSample) {
+  final parsed = parse(rawInput);
+  return (solvePart1(parsed, isSample), solvePart2(parsed, isSample));
 }
 
 List<(int, int)> parse(String input) {
   final byteCoords = <(int, int)>[];
-  final lines = input.trim().split('\n');
-  for (final line in lines) {
-    if (line.trim().isEmpty) continue;
+  for (final line in getLines(input)) {
     final parts = line.split(',');
-    byteCoords.add((int.parse(parts[0].trim()), int.parse(parts[1].trim())));
+    byteCoords.add((int.parse(parts[0]), int.parse(parts[1])));
   }
   return byteCoords;
 }
 
-(int, String) solve(List<(int, int)> byteCoords, bool isSample) {
+int solvePart1(List<(int, int)> byteCoords, bool isSample) {
   final size = isSample ? 7 : 71;
   final part1BytesCount = isSample ? 12 : 1024;
+  final corrupted = byteCoords.take(part1BytesCount).toSet();
+  final cost = _findPath(size, corrupted);
+  return cost?.toInt() ?? -1;
+}
 
-  final corruptedPart1 = byteCoords.take(part1BytesCount).toSet();
-  final costPart1 = _findPath(size, corruptedPart1);
-  final p1 = costPart1?.toInt() ?? -1;
+String solvePart2(List<(int, int)> byteCoords, bool isSample) {
+  final size = isSample ? 7 : 71;
+  final part1BytesCount = isSample ? 12 : 1024;
 
   var low = part1BytesCount;
   var high = byteCoords.length - 1;
@@ -77,9 +83,9 @@ List<(int, int)> parse(String input) {
 
   if (firstBlockingIndex != -1) {
     final (x, y) = byteCoords[firstBlockingIndex];
-    return (p1, '$x,$y');
+    return '$x,$y';
   }
-  return (p1, 'No Blocking Byte');
+  return 'No Blocking Byte';
 }
 
 double? _findPath(int size, Set<(int, int)> corrupted) {

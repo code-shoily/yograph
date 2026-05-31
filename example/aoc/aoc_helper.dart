@@ -36,3 +36,12 @@ Future<(String input, bool isSample)> loadInput({
   print('No input file found. Using sample input instead...');
   return (sampleInput, true);
 }
+
+/// Utility to split an input block into a list of non-empty, trimmed lines.
+List<String> getLines(String input) {
+  return input
+      .split('\n')
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty)
+      .toList();
+}

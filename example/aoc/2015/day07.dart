@@ -28,20 +28,22 @@ void main() async {
     day: 7,
     sampleInput: sampleInput,
   );
-  final parsed = parse(input);
-  final (p1, p2) = solve(parsed, isSample);
+  final (p1, p2) = solve(input, isSample);
   print('($p1, $p2)');
+}
+
+(int, int) solve(String rawInput, bool isSample) {
+  final parsed = parse(rawInput);
+  return (solvePart1(parsed, isSample), solvePart2(parsed, isSample));
 }
 
 Map<String, GateInstruction> parse(String input) {
   final builder = LabeledBuilder<String, double>.directed();
   final instructions = <String, GateInstruction>{};
-  final lines = input.trim().split('\n');
-  for (final line in lines) {
-    if (line.trim().isEmpty) continue;
+  for (final line in getLines(input)) {
     final parts = line.split(' -> ');
-    final expr = parts[0].trim();
-    final dest = parts[1].trim();
+    final expr = parts[0];
+    final dest = parts[1];
     final GateInstruction instruction;
     final exprParts = expr.split(' ');
     switch (exprParts) {
@@ -74,20 +76,19 @@ Map<String, GateInstruction> parse(String input) {
   return instructions;
 }
 
-(int, int) solve(Map<String, GateInstruction> instructions, bool isSample) {
+int solvePart1(Map<String, GateInstruction> instructions, bool isSample) {
+  final targetWire = isSample ? 'd' : 'a';
+  return _evaluate(targetWire, instructions, {});
+}
+
+int solvePart2(Map<String, GateInstruction> instructions, bool isSample) {
   if (isSample) {
-    final memo = <String, int>{};
-    final p1 = _evaluate('d', instructions, memo);
-    final p2 = _evaluate('e', instructions, memo);
-    return (p1, p2);
+    return _evaluate('e', instructions, {});
   }
-  final memoPart1 = <String, int>{};
-  final signalA = _evaluate('a', instructions, memoPart1);
+  final signalA = _evaluate('a', instructions, {});
   final instructionsCopy = Map<String, GateInstruction>.from(instructions);
   instructionsCopy['b'] = GateInstruction('ASSIGN', [signalA.toString()]);
-  final memoPart2 = <String, int>{};
-  final newSignalA = _evaluate('a', instructionsCopy, memoPart2);
-  return (signalA, newSignalA);
+  return _evaluate('a', instructionsCopy, {});
 }
 
 void _addDependencyEdge(
