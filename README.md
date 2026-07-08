@@ -5,29 +5,13 @@
 > 1. connection, link, union
 > 2. addition, sum
 
-```text
-                    ★
-                   /|\
-                  / | \
-                 /  |  \
-                Y   |   O--------G
-               /    |    \      /
-              /     |     \    /
-             /      |      \  /
-            যো------+-------গ
-           / \      |      / \
-          /   \     |     /   \
-         /     \    |    /     \
-        ✦       ✦   |   ✦       ✦
-```
-
 [![pub package](https://img.shields.io/pub/v/yograph.svg)](https://pub.dev/packages/yograph)
 [![Dart CI](https://github.com/code-shoily/yograph/actions/workflows/dart.yml/badge.svg)](https://github.com/code-shoily/yograph/actions/workflows/dart.yml)
 
 Yograph is a graph theory library for Dart. It provides graph algorithms and data structures through capability-based interfaces.
 
 **[YogEx](https://github.com/code-shoily/yog_ex)** — Elixir implementation with a superset of features.  
-**[Yog](https://github.com/code-shoily/yog)** — Gleam implementation with a functional API.
+**[Yog](https://github.com/code-shoily/yog)** — Gleam implementation with a functional, typed API.
 
 ## Features
 
@@ -356,55 +340,6 @@ To enable the pre-commit hook in your local clone, run:
 git config core.hooksPath .githooks
 ```
 
-### Project Structure
-
-- `lib/src/model/` — Capability interfaces (`Traversable`, `Queryable`, `Mutable`, `Reversible`, `Bidirectional`)
-- `lib/src/pathfinding/` — Dijkstra, A*, Bellman-Ford, Floyd-Warshall, Johnson
-- `lib/src/traversal/` — BFS, DFS, topological sort, random walk
-- `lib/src/mst/` — Kruskal's and Prim's MST algorithms
-- `lib/src/centrality/` — Brandes' algorithm + degree, closeness, harmonic, betweenness, PageRank, eigenvector, Katz, alpha, HITS
-- `lib/src/property/` — Health metrics (`Health`) and structural predicates (`Structure`)
-- `lib/src/connectivity/` — Components, SCC (Tarjan / Kosaraju), bridge/articulation-point analysis, K-core, reachability
-- `lib/src/dag/` — DAG utilities: topological generations, longest/shortest path, sources/sinks, ancestors/descendants, LCA, path counts
-- `lib/src/matching/` — Hopcroft-Karp, Hungarian (Kuhn-Munkres), Edmonds' blossom
-- `lib/src/community/` — Louvain, Leiden, label propagation, Walktrap, modularity, clustering, transitivity
-- `lib/src/transform/` — Transitive closure and transitive reduction
-- `lib/src/builder/` — `LabeledBuilder` for label-based graph construction
-- `lib/src/internal/` — Shared utilities (`PriorityQueue`)
-
-## Algorithm Catalog
-
-| Category | Algorithms | Complexity |
-|----------|-----------|------------|
-| **SSSP** | Dijkstra, A*, Bellman-Ford | O((V+E) log V), O(V×E) |
-| **APSP** | Floyd-Warshall, Johnson | O(V³), O(V×E log V) |
-| **MST** | Kruskal, Prim | O(E log E), O(E log V) |
-| **Traversal** | BFS, DFS, best-first, random walk | O(V+E) |
-| **DAG** | Topological sort (Kahn's), generations, longest/shortest path, path count, sources/sinks, ancestors/descendants, LCA | O(V+E) |
-| **Union-Find** | Disjoint Set | O(α(V)) amortized |
-| **Centrality** | Degree, closeness, harmonic, betweenness (Brandes), PageRank, eigenvector, Katz, alpha, HITS | O(V×E) – O(V³) |
-| **Health** | Diameter, radius, eccentricity, assortativity, APL, global/local efficiency | O(V×(V+E) log V) |
-| **Components** | Connected, weakly connected | O(V+E) |
-| **SCC** | Tarjan, Kosaraju | O(V+E) |
-| **Analysis** | Bridges, articulation points | O(V+E) |
-| **K-Core** | Core numbers, degeneracy, shell decomposition | O(V+E) |
-| **Reachability** | Ancestor/descendant counts (exact), transitive closure | O(V+E) |
-| **Structure** | Tree, forest, arborescence, complete, regular, chordal | O(V+E) |
-| **Matching** | Hopcroft-Karp, Hungarian (Kuhn-Munkres), Edmonds' blossom | O(E√V), O(V³), O(V⁴) |
-| **Community** | Louvain, Leiden, label propagation, Walktrap, modularity, clustering, transitivity | O(E) – O(V² log V) |
-| **Transforms** | Transitive closure, transitive reduction | O(V+E), O(V×(V+E)) |
-
-For more details on individual algorithms, see [ALGORITHMS.md](ALGORITHMS.md).
-
-## Related Projects
-
-- **[YogEx](https://github.com/code-shoily/yog_ex)** — Elixir graph library (superset of features)
-- **[Yog](https://github.com/code-shoily/yog)** — Gleam graph library (functional API)
-
 ## License
 
 MIT
-
----
-
-**Yograph** — Graph algorithms for Dart
