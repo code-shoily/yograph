@@ -18,6 +18,9 @@ export 'src/traversal/walk_control.dart';
 export 'src/traversal/walk_metadata.dart';
 export 'src/traversal/traversal.dart';
 
+// DAG utilities
+export 'src/dag/dag.dart';
+
 // Data structures
 export 'src/disjoint_set.dart';
 
@@ -28,6 +31,9 @@ export 'src/pathfinding/pathfinding.dart';
 export 'src/mst/mst_edge.dart';
 export 'src/mst/mst_result.dart';
 export 'src/mst/mst.dart';
+
+// Matching
+export 'src/matching/matching.dart';
 
 // Centrality
 export 'src/centrality/brandes.dart';
@@ -49,6 +55,19 @@ export 'src/flow/min_cut.dart';
 
 // Connectivity
 export 'src/connectivity/connectivity.dart';
+
+// Transformations
+export 'src/transform/transform.dart';
+
+// Community Detection
+export 'src/community/community_result.dart';
+export 'src/community/community_dendrogram.dart';
+export 'src/community/community_metrics.dart';
+export 'src/community/community.dart';
+export 'src/community/label_propagation.dart';
+export 'src/community/louvain.dart';
+export 'src/community/leiden.dart';
+export 'src/community/walktrap.dart';
 
 // Implementations
 export 'src/simple_graph.dart';
