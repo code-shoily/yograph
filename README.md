@@ -24,14 +24,14 @@
 [![pub package](https://img.shields.io/pub/v/yograph.svg)](https://pub.dev/packages/yograph)
 [![Dart CI](https://github.com/code-shoily/yograph/actions/workflows/dart.yml/badge.svg)](https://github.com/code-shoily/yograph/actions/workflows/dart.yml)
 
-Yograph is a comprehensive graph theory library for Dart, providing classic and research-grade graph algorithms with a clean, capability-based API.
+Yograph is a graph theory library for Dart. It provides graph algorithms and data structures through capability-based interfaces.
 
 **[YogEx](https://github.com/code-shoily/yog_ex)** — Elixir implementation with a superset of features.  
 **[Yog](https://github.com/code-shoily/yog)** — Gleam implementation with a functional API.
 
 ## Features
 
-Yograph provides balanced graph algorithms across multiple domains:
+Yograph includes algorithms for the following areas:
 
 ### Pathfinding & Shortest Paths
 
@@ -49,7 +49,7 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 **BFS & DFS** — `walk()`, `walkUntil()`, `foldWalk()`  
 **Best-First** — `bestFirstWalk()`, `bestFirstFold()`  
 **Topological Sort** — `topologicalSort()`, `lexicographicalTopologicalSort()`  
-**Random Walk** — `randomWalk()` with seeded reproducibility  
+**Random Walk** — `randomWalk()` with optional seed  
 
 ### Connectivity & Structure
 
@@ -67,7 +67,7 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 **Spectral / Iterative** — `Centrality.pageRank()`, `Centrality.eigenvector()`, `Centrality.katz()`, `Centrality.alpha()`  
 **Link-Analysis** — `Centrality.hits()` (hub & authority scores)
 
-### Health & Quality Metrics
+### Health Metrics
 
 **Distance Metrics** — `Health.diameter()`, `Health.radius()`, `Health.eccentricity()`  
 **Structural** — `Health.assortativity()` (Pearson degree correlation)  
@@ -100,7 +100,7 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 **Leiden** — `Community.leiden()` (Louvain with refinement, hierarchical variant available)  
 **Label Propagation** — `Community.labelPropagation()`  
 **Walktrap** — `Community.walktrap()` (random-walk hierarchical clustering)  
-**Quality Metrics** — `Community.modularity()`, `Community.clusteringCoefficient()`, `Community.averageClusteringCoefficient()`, `Community.transitivity()`, `Community.countTriangles()`  
+**Metrics** — `Community.modularity()`, `Community.clusteringCoefficient()`, `Community.averageClusteringCoefficient()`, `Community.transitivity()`, `Community.countTriangles()`  
 **Utilities** — `Community.toMap()`, `Community.sizes()`, `Community.merge()`, `Community.nmi()`
 
 ### Graph Transformations
@@ -108,12 +108,12 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 **Transitive Closure** — `Transform.transitiveClosure()`  
 **Transitive Reduction** — `Transform.transitiveReduction()`
 
-### Developer Experience
+### Design
 
-**Capability-Based Interfaces** — `Traversable`, `Queryable`, `Mutable`, `Reversible` compose into role interfaces like `Walkable`, `WeightedWalkable`, `Bidirectional`  
-**Labeled Builder** — `LabeledBuilder` bridges ergonomic string/enum labels to internal `int` node IDs  
-**Strategy Pattern** — `Pathfinding.shortestPath()` accepts pluggable `PointToPointStrategy` implementations  
-**Disjoint Set** — `DisjointSet` with path compression and union by rank
+**Capability-Based Interfaces** — `Traversable`, `Queryable`, `Mutable`, `Reversible` combine into roles such as `Walkable`, `WeightedWalkable`, and `Bidirectional`.  
+**Labeled Builder** — `LabeledBuilder` maps string/enum labels to internal `int` node IDs.  
+**Strategy Pattern** — `Pathfinding.shortestPath()` accepts `PointToPointStrategy` implementations.  
+**Disjoint Set** — `DisjointSet` with path compression and union by rank.
 
 ## Installation
 
@@ -345,7 +345,7 @@ dart format --output=none --set-exit-if-changed .
 
 ### Git Pre-Commit Hook
 
-This repository includes a shared Git pre-commit hook that automatically formats all staged `.dart` files and runs `dart analyze` before allowing any commit to succeed.
+This repository includes a Git pre-commit hook that formats staged `.dart` files and runs `dart analyze` before the commit.
 
 To enable the pre-commit hook in your local clone, run:
 
@@ -366,7 +366,7 @@ git config core.hooksPath .githooks
 - `lib/src/matching/` — Hopcroft-Karp, Hungarian (Kuhn-Munkres), Edmonds' blossom
 - `lib/src/community/` — Louvain, Leiden, label propagation, Walktrap, modularity, clustering, transitivity
 - `lib/src/transform/` — Transitive closure and transitive reduction
-- `lib/src/builder/` — `LabeledBuilder` for ergonomic graph construction
+- `lib/src/builder/` — `LabeledBuilder` for label-based graph construction
 - `lib/src/internal/` — Shared utilities (`PriorityQueue`)
 
 ## Algorithm Catalog
