@@ -2,6 +2,7 @@ export 'a_star.dart';
 export 'bellman_ford.dart';
 export 'dijkstra.dart';
 export 'floyd_warshall.dart';
+export 'johnson.dart';
 export 'strategy.dart';
 
 import '../model/roles.dart';

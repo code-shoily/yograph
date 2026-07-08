@@ -723,6 +723,161 @@ void main() {
     });
   });
 
+  // ===========================================================================
+  // Johnson
+  // ===========================================================================
+
+  group('Johnson.allPairs', () {
+    test('triangle graph — shortest path via intermediate', () {
+      final g = SimpleGraph<String, int>.directed();
+      g.addEdge(1, 2, data: 4);
+      g.addEdge(2, 3, data: 1);
+      g.addEdge(1, 3, data: 10);
+
+      final result = Johnson.allPairs(g);
+      expect(result.hasNegativeCycle, isFalse);
+      expect(result.distance(1, 3), 5.0);
+      expect(result.distance(1, 2), 4.0);
+      expect(result.distance(2, 3), 1.0);
+      expect(result.distance(1, 1), 0.0);
+    });
+
+    test('all-pairs on classic graph', () {
+      final g = _classicDijkstra();
+      final result = Johnson.allPairs(g);
+      expect(result.hasNegativeCycle, isFalse);
+      expect(result.distance(0, 5), 12.0);
+      expect(result.distance(0, 0), 0.0);
+    });
+
+    test('negative edges without cycle', () {
+      // 0→1=4, 0→2=3, 1→2=-2, 2→3=-3, 3→4=2
+      final g = SimpleGraph<String, int>.directed();
+      g.addEdge(0, 1, data: 4);
+      g.addEdge(0, 2, data: 3);
+      g.addEdge(1, 2, data: -2);
+      g.addEdge(2, 3, data: -3);
+      g.addEdge(3, 4, data: 2);
+
+      final result = Johnson.allPairs(g);
+      expect(result.hasNegativeCycle, isFalse);
+      expect(result.distance(0, 4), 1.0); // 0→1→2→3→4 = 4-2-3+2 = 1
+      expect(result.distance(0, 3), -1.0); // 4-2-3 = -1
+      expect(result.distance(1, 3), -5.0); // -2-3 = -5
+    });
+
+    test('negative cycle detection', () {
+      final g = SimpleGraph<String, int>.directed();
+      g.addEdge(1, 2, data: 1);
+      g.addEdge(2, 1, data: -3);
+
+      final result = Johnson.allPairs(g);
+      expect(result.hasNegativeCycle, isTrue);
+      expect(result.distances, isNull);
+    });
+
+    test('single node', () {
+      final g = SimpleGraph<String, int>.directed()..addNode(0);
+      final result = Johnson.allPairs(g);
+      expect(result.hasNegativeCycle, isFalse);
+      expect(result.distance(0, 0), 0.0);
+    });
+
+    test('empty graph', () {
+      final g = SimpleGraph<String, int>.directed();
+      final result = Johnson.allPairs(g);
+      expect(result.hasNegativeCycle, isFalse);
+      expect(result.distances, isEmpty);
+    });
+
+    test('undirected graph has symmetric distances', () {
+      final g = SimpleGraph<String, int>.undirected();
+      g.addEdge(0, 1, data: 3);
+      g.addEdge(1, 2, data: 4);
+
+      final result = Johnson.allPairs(g);
+      expect(result.distance(0, 2), 7.0);
+      expect(result.distance(2, 0), 7.0);
+      expect(result.distance(0, 1), 3.0);
+      expect(result.distance(1, 0), 3.0);
+    });
+
+    test('no path returns null distance', () {
+      final g = SimpleGraph<String, int>.directed();
+      g.addEdge(0, 1, data: 1);
+      g.addNode(2);
+
+      final result = Johnson.allPairs(g);
+      expect(result.distance(0, 2), isNull);
+      expect(result.distance(2, 0), isNull);
+    });
+
+    test('matches FloydWarshall on random graph', () {
+      final g = SimpleGraph<String, int>.directed();
+      g.addEdge(0, 1, data: 5);
+      g.addEdge(0, 2, data: -2);
+      g.addEdge(1, 2, data: 1);
+      g.addEdge(2, 3, data: 3);
+      g.addEdge(1, 3, data: 4);
+      g.addEdge(3, 1, data: -1);
+
+      final johnson = Johnson.allPairs(g);
+      final floyd = FloydWarshall.allPairs(g);
+
+      expect(johnson.hasNegativeCycle, isFalse);
+      expect(floyd.hasNegativeCycle, isFalse);
+      expect(johnson.distances, equals(floyd.distances));
+    });
+
+    test('unreachable pair is omitted', () {
+      final g = SimpleGraph<String, int>.directed();
+      g.addEdge(0, 1, data: 1);
+      g.addEdge(2, 3, data: 1);
+
+      final result = Johnson.allPairs(g);
+      expect(result.hasNegativeCycle, isFalse);
+      expect(result.distance(0, 1), 1.0);
+      expect(result.distance(2, 3), 1.0);
+      expect(result.distance(0, 2), isNull);
+      expect(result.distance(1, 2), isNull);
+    });
+
+    test('result toString', () {
+      final success = JohnsonResult.success({(0, 1): 5.0});
+      final cycle = JohnsonResult.negativeCycle();
+
+      expect(success.toString(), 'JohnsonResult(1 entries)');
+      expect(cycle.toString(), 'JohnsonResult(negativeCycle)');
+    });
+  });
+
+  group('Johnson.hasNegativeCycle', () {
+    test('detects negative cycle', () {
+      final g = SimpleGraph<String, int>.directed();
+      g.addEdge(1, 2, data: 1);
+      g.addEdge(2, 1, data: -3);
+
+      expect(Johnson.hasNegativeCycle(g), isTrue);
+    });
+
+    test('no negative cycle in positive graph', () {
+      final g = _classicDijkstra();
+      expect(Johnson.hasNegativeCycle(g), isFalse);
+    });
+
+    test('no negative cycle with negative edges but no cycle', () {
+      final g = SimpleGraph<String, int>.directed();
+      g.addEdge(0, 1, data: -1);
+      g.addEdge(1, 2, data: -2);
+
+      expect(Johnson.hasNegativeCycle(g), isFalse);
+    });
+  });
+
+  // ===========================================================================
+  // FloydWarshall.hasNegativeCycle
+  // ===========================================================================
+
   group('FloydWarshall.hasNegativeCycle', () {
     test('detects negative cycle', () {
       final g = SimpleGraph<String, int>.directed();
