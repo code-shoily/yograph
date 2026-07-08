@@ -39,7 +39,8 @@ Yograph provides balanced graph algorithms across multiple domains:
 **A\*** — `AStar.aStar()`, `AStar.implicitAStar()`, `AStar.implicitAStarBy()`  
 **Bellman-Ford** — `BellmanFord.shortestPath()`, negative cycle detection  
 **Floyd-Warshall** — `FloydWarshall.allPairs()`, all-pairs shortest paths  
-**Widest Path** — `Dijkstra.widestPath()`, maximum bottleneck routing
+**Johnson** — `Johnson.allPairs()`, all-pairs shortest paths with negative weights (no negative cycles)  
+**Widest Path** — `Dijkstra.widestPath()`, maximum bottleneck routing  
 
 All pathfinding algorithms support custom semirings via optional `add` and `compare` callbacks.
 
@@ -48,7 +49,7 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 **BFS & DFS** — `walk()`, `walkUntil()`, `foldWalk()`  
 **Best-First** — `bestFirstWalk()`, `bestFirstFold()`  
 **Topological Sort** — `topologicalSort()`, `lexicographicalTopologicalSort()`  
-**Random Walk** — `randomWalk()` with seeded reproducibility
+**Random Walk** — `randomWalk()` with seeded reproducibility  
 
 ### Connectivity & Structure
 
@@ -77,6 +78,35 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 
 **Kruskal** — `MST.kruskal()`, `MST.kruskalMax()`  
 **Prim** — `MST.prim()`, `MST.primMax()`
+
+### DAG Algorithms
+
+**DAG Detection** — `DAG.isDag()`, `DAG.topologicalOrder()`  
+**Generations** — `DAG.topologicalGenerations()`  
+**Paths** — `DAG.longestPath()`, `DAG.shortestPath()`, `DAG.pathCount()`  
+**Distances** — `DAG.singleSourceDistances()`  
+**Sources & Sinks** — `DAG.sources()`, `DAG.sinks()`  
+**Ancestry** — `DAG.ancestors()`, `DAG.descendants()`, `DAG.lowestCommonAncestors()`
+
+### Matching
+
+**Bipartite Maximum Matching** — `Matching.hopcroftKarp()`  
+**Bipartite Minimum/Maximum Weight Perfect Matching** — `Matching.hungarian()`  
+**General Maximum Matching** — `Matching.blossomMaximumMatching()` (Edmonds' blossom algorithm)
+
+### Community Detection
+
+**Louvain** — `Community.louvain()` (modularity optimization, hierarchical variant available)  
+**Leiden** — `Community.leiden()` (Louvain with refinement, hierarchical variant available)  
+**Label Propagation** — `Community.labelPropagation()`  
+**Walktrap** — `Community.walktrap()` (random-walk hierarchical clustering)  
+**Quality Metrics** — `Community.modularity()`, `Community.clusteringCoefficient()`, `Community.averageClusteringCoefficient()`, `Community.transitivity()`, `Community.countTriangles()`  
+**Utilities** — `Community.toMap()`, `Community.sizes()`, `Community.merge()`, `Community.nmi()`
+
+### Graph Transformations
+
+**Transitive Closure** — `Transform.transitiveClosure()`  
+**Transitive Reduction** — `Transform.transitiveReduction()`
 
 ### Developer Experience
 
@@ -212,6 +242,89 @@ print(Structure.isChordal(graph)); // true
 print(Structure.isComplete(graph)); // false
 ```
 
+### DAG & Transforms
+
+```dart
+final dag = SimpleGraph<String, void>.directed()
+  ..addEdge(0, 1)
+  ..addEdge(0, 2)
+  ..addEdge(1, 3)
+  ..addEdge(2, 3)
+  ..addEdge(0, 3); // shortcut
+
+// Topological generations
+print(DAG.topologicalGenerations(dag)); // [[0], [1, 2], [3]]
+
+// Longest path
+print(DAG.longestPath(dag)); // [0, 1, 3] or [0, 2, 3]
+
+// Transitive closure
+print(Transform.transitiveClosure(dag));
+// {0: {0, 1, 2, 3}, 1: {1, 3}, 2: {2, 3}, 3: {3}}
+
+// Transitive reduction removes the redundant shortcut
+final reduced = Transform.transitiveReduction(dag)!;
+print(reduced.hasEdge(0, 3)); // false
+```
+
+### Community Detection
+
+```dart
+final social = SimpleGraph<String, int>.undirected()
+  ..addEdge(0, 1, data: 1)
+  ..addEdge(1, 2, data: 1)
+  ..addEdge(2, 0, data: 1)
+  ..addEdge(3, 4, data: 1)
+  ..addEdge(4, 5, data: 1)
+  ..addEdge(5, 3, data: 1)
+  ..addEdge(2, 3, data: 1); // bridge between two cliques
+
+// Louvain modularity optimization
+final communities = Community.louvain(social, seed: 42);
+print(communities.numCommunities); // 2
+print(Community.modularity(social, communities)); // > 0.3
+
+// Clustering metrics
+print(Community.transitivity(social)); // global clustering coefficient
+print(Community.averageClusteringCoefficient(social));
+
+// Utilities
+print(Community.toMap(communities)); // {0: {0, 1, 2}, 1: {3, 4, 5}}
+```
+
+### Matching
+
+```dart
+// Bipartite maximum cardinality
+final bipartite = SimpleGraph<String, void>.undirected()
+  ..addEdge(0, 3)
+  ..addEdge(0, 4)
+  ..addEdge(1, 4)
+  ..addEdge(2, 5);
+
+print(Matching.hopcroftKarp(bipartite)); // {0: 3, 1: 4, 2: 5}
+
+// Weighted bipartite matching (Hungarian / Kuhn-Munkres)
+final weighted = SimpleGraph<String, int>.undirected()
+  ..addEdge(0, 2, data: 1)
+  ..addEdge(0, 3, data: 4)
+  ..addEdge(1, 2, data: 2)
+  ..addEdge(1, 3, data: 3);
+
+final result = Matching.hungarian(weighted, optimization: Optimization.min);
+print(result.cost);      // 4.0
+print(result.matching);  // {0: 2, 1: 3}
+
+// General graph maximum matching (Edmonds' blossom)
+final general = SimpleGraph<String, void>.undirected()
+  ..addEdge(0, 1)
+  ..addEdge(1, 2)
+  ..addEdge(2, 0)
+  ..addEdge(2, 3);
+
+print(Matching.blossomMaximumMatching(general)); // {0: 1, 1: 0, 2: 3, 3: 2}
+```
+
 ## Development
 
 ### Running Tests
@@ -243,12 +356,16 @@ git config core.hooksPath .githooks
 ### Project Structure
 
 - `lib/src/model/` — Capability interfaces (`Traversable`, `Queryable`, `Mutable`, `Reversible`, `Bidirectional`)
-- `lib/src/pathfinding/` — Dijkstra, A*, Bellman-Ford, Floyd-Warshall
+- `lib/src/pathfinding/` — Dijkstra, A*, Bellman-Ford, Floyd-Warshall, Johnson
 - `lib/src/traversal/` — BFS, DFS, topological sort, random walk
 - `lib/src/mst/` — Kruskal's and Prim's MST algorithms
 - `lib/src/centrality/` — Brandes' algorithm + degree, closeness, harmonic, betweenness, PageRank, eigenvector, Katz, alpha, HITS
 - `lib/src/property/` — Health metrics (`Health`) and structural predicates (`Structure`)
 - `lib/src/connectivity/` — Components, SCC (Tarjan / Kosaraju), bridge/articulation-point analysis, K-core, reachability
+- `lib/src/dag/` — DAG utilities: topological generations, longest/shortest path, sources/sinks, ancestors/descendants, LCA, path counts
+- `lib/src/matching/` — Hopcroft-Karp, Hungarian (Kuhn-Munkres), Edmonds' blossom
+- `lib/src/community/` — Louvain, Leiden, label propagation, Walktrap, modularity, clustering, transitivity
+- `lib/src/transform/` — Transitive closure and transitive reduction
 - `lib/src/builder/` — `LabeledBuilder` for ergonomic graph construction
 - `lib/src/internal/` — Shared utilities (`PriorityQueue`)
 
@@ -257,10 +374,10 @@ git config core.hooksPath .githooks
 | Category | Algorithms | Complexity |
 |----------|-----------|------------|
 | **SSSP** | Dijkstra, A*, Bellman-Ford | O((V+E) log V), O(V×E) |
-| **APSP** | Floyd-Warshall | O(V³) |
+| **APSP** | Floyd-Warshall, Johnson | O(V³), O(V×E log V) |
 | **MST** | Kruskal, Prim | O(E log E), O(E log V) |
 | **Traversal** | BFS, DFS, best-first, random walk | O(V+E) |
-| **DAG** | Topological sort (Kahn's) | O(V+E) |
+| **DAG** | Topological sort (Kahn's), generations, longest/shortest path, path count, sources/sinks, ancestors/descendants, LCA | O(V+E) |
 | **Union-Find** | Disjoint Set | O(α(V)) amortized |
 | **Centrality** | Degree, closeness, harmonic, betweenness (Brandes), PageRank, eigenvector, Katz, alpha, HITS | O(V×E) – O(V³) |
 | **Health** | Diameter, radius, eccentricity, assortativity, APL, global/local efficiency | O(V×(V+E) log V) |
@@ -268,8 +385,13 @@ git config core.hooksPath .githooks
 | **SCC** | Tarjan, Kosaraju | O(V+E) |
 | **Analysis** | Bridges, articulation points | O(V+E) |
 | **K-Core** | Core numbers, degeneracy, shell decomposition | O(V+E) |
-| **Reachability** | Ancestor/descendant counts (exact) | O(V+E) |
+| **Reachability** | Ancestor/descendant counts (exact), transitive closure | O(V+E) |
 | **Structure** | Tree, forest, arborescence, complete, regular, chordal | O(V+E) |
+| **Matching** | Hopcroft-Karp, Hungarian (Kuhn-Munkres), Edmonds' blossom | O(E√V), O(V³), O(V⁴) |
+| **Community** | Louvain, Leiden, label propagation, Walktrap, modularity, clustering, transitivity | O(E) – O(V² log V) |
+| **Transforms** | Transitive closure, transitive reduction | O(V+E), O(V×(V+E)) |
+
+For more details on individual algorithms, see [ALGORITHMS.md](ALGORITHMS.md).
 
 ## Related Projects
 

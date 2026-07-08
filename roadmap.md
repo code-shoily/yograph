@@ -21,7 +21,7 @@ Our goal is systematic functional parity with identical modular structures and r
 | **Floyd-Warshall** | `Yog.Pathfinding.FloydWarshall` | `FloydWarshall` | `[x]` |
 | **Widest Path** | `Yog.Pathfinding` | `Dijkstra.widestPath` | `[x]` |
 | **Unweighted SSSP** | `Yog.Pathfinding` | `Traversal` / BFS shortest path | `[x]` |
-| **Johnson's** | `Yog.Pathfinding.Johnson` | - | `[ ]` |
+| **Johnson's** | `Yog.Pathfinding.Johnson` | `Johnson` | `[x]` |
 | **Bidirectional Dijkstra** | `Yog.Pathfinding.Bidirectional` | - | `[ ]` |
 | **Bidirectional BFS** | `Yog.Pathfinding.Bidirectional` | - | `[ ]` |
 | **Yen's K-Shortest** | `Yog.Pathfinding.Yen` | - | `[ ]` |
@@ -43,7 +43,18 @@ Our goal is systematic functional parity with identical modular structures and r
 
 ---
 
-## 3. Connectivity & Components
+## 3. Matching
+| Algorithm | Elixir Module | Dart Support | Status |
+| :--- | :--- | :--- | :---: |
+| **Hopcroft–Karp** | `Yog.Matching` | `Matching.hopcroftKarp` | `[x]` |
+| **Hungarian** | `Yog.Matching` | `Matching.hungarian` | `[x]` |
+| **Blossom (Edmonds)** | `Yog.Matching` | `Matching.blossomMaximumMatching` | `[x]` |
+| **Bipartite Maximum Matching** | `Yog.Property.Bipartite` | `Bipartite.maximumMatching` | `[x]` |
+| **Stable Marriage** | `Yog.Property.Bipartite` | `Bipartite.stableMarriage` | `[x]` |
+
+---
+
+## 4. Connectivity & Components
 | Algorithm | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
 | **Connected Components** | `Yog.Connectivity` | `Components.connectedComponents` | `[x]` |
@@ -58,7 +69,7 @@ Our goal is systematic functional parity with identical modular structures and r
 
 ---
 
-## 4. Centrality Measures
+## 5. Centrality Measures
 | Algorithm | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
 | **Degree Centrality** | `Yog.Centrality` | `Centrality.degree` | `[x]` |
@@ -73,7 +84,7 @@ Our goal is systematic functional parity with identical modular structures and r
 
 ---
 
-## 5. Traversal & Search
+## 6. Traversal & Search
 | Algorithm | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
 | **BFS** | `Yog.Traversal` | `walk` (BFS mode) | `[x]` |
@@ -86,7 +97,25 @@ Our goal is systematic functional parity with identical modular structures and r
 
 ---
 
-## 6. Structural Properties
+## 7. DAG Algorithms
+| Algorithm | Elixir Module | Dart Support | Status |
+| :--- | :--- | :--- | :---: |
+| **DAG Validation** | `Yog.DAG` / `Yog.Property.Cyclicity` | `DAG.isDag` | `[x]` |
+| **Topological Sort** | `Yog.Traversal` | `topologicalSort` | `[x]` |
+| **Topological Generations** | `Yog.DAG` | `DAG.topologicalGenerations` | `[x]` |
+| **Sources / Sinks** | `Yog.DAG` | `DAG.sources` / `DAG.sinks` | `[x]` |
+| **Single-Source Distances** | `Yog.DAG.Algorithm` | `DAG.singleSourceDistances` | `[x]` |
+| **Shortest Path** | `Yog.DAG.Algorithm` | `DAG.shortestPath` | `[x]` |
+| **Longest Path** | `Yog.DAG.Algorithm` | `DAG.longestPath` / `DAG.longestPathNodes` | `[x]` |
+| **Ancestors / Descendants** | `Yog.DAG` | `DAG.ancestors` / `DAG.descendants` | `[x]` |
+| **Lowest Common Ancestors** | `Yog.DAG` | `DAG.lowestCommonAncestors` | `[x]` |
+| **Path Count** | `Yog.DAG.Algorithm` | `DAG.pathCount` | `[x]` |
+| **Transitive Closure** | `Yog.Transform` | `Transform.transitiveClosure` | `[x]` |
+| **Transitive Reduction** | `Yog.Transform` | `Transform.transitiveReduction` | `[x]` |
+
+---
+
+## 8. Structural Properties
 | Algorithm | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
 | **Bipartite Check / Coloring**| `Yog.Property.Bipartite` | `Bipartite.isBipartite` / `coloring` | `[x]` |
@@ -107,7 +136,7 @@ Our goal is systematic functional parity with identical modular structures and r
 
 ---
 
-## 7. Network Flows & Cuts
+## 9. Network Flows & Cuts
 | Algorithm | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
 | **Edmonds-Karp** | `Yog.Flow.MaxFlow` | `MaxFlow.edmondsKarp` | `[x]` |
@@ -119,20 +148,20 @@ Our goal is systematic functional parity with identical modular structures and r
 
 ---
 
-## 8. Community Detection & Metrics 🔴 *(Upcoming)*
+## 10. Community Detection & Metrics
 | Algorithm | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
-| **Louvain** | `Yog.Community.Louvain` | - | `[ ]` |
-| **Leiden** | `Yog.Community.Leiden` | - | `[ ]` |
-| **Label Propagation** | `Yog.Community.LabelPropagation`| - | `[ ]` |
-| **Walktrap** | `Yog.Community.Walktrap`| - | `[ ]` |
-| **Transitivity** | `Yog.Community.Metrics` | - | `[ ]` |
-| **Clustering Coefficient** | `Yog.Community` | - | `[ ]` |
-| **Modularity** | `Yog.Community` | - | `[ ]` |
+| **Louvain** | `Yog.Community.Louvain` | `Community.louvain` / `Louvain.detect` | `[x]` |
+| **Leiden** | `Yog.Community.Leiden` | `Community.leiden` / `Leiden.detect` | `[x]` |
+| **Label Propagation** | `Yog.Community.LabelPropagation`| `Community.labelPropagation` / `LabelPropagation.detect` | `[x]` |
+| **Walktrap** | `Yog.Community.Walktrap`| `Community.walktrap` / `Walktrap.detect` | `[x]` |
+| **Transitivity** | `Yog.Community.Metrics` | `Community.transitivity` / `CommunityMetrics.transitivity` | `[x]` |
+| **Clustering Coefficient** | `Yog.Community` | `Community.clusteringCoefficient` / `CommunityMetrics.clusteringCoefficient` | `[x]` |
+| **Modularity** | `Yog.Community` | `Community.modularity` / `CommunityMetrics.modularity` | `[x]` |
 
 ---
 
-## 9. Data Structures
+## 11. Data Structures
 | Structure | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
 | **Disjoint Set** | `Yog.DisjointSet` | `DisjointSet` | `[x]` |
@@ -141,7 +170,7 @@ Our goal is systematic functional parity with identical modular structures and r
 
 ---
 
-## 10. Builders & Generators
+## 12. Builders & Generators
 | Builder / Generator | Elixir Module | Dart Support | Status |
 | :--- | :--- | :--- | :---: |
 | **Labeled Graph Builder** | `Yog.Builder.Labeled` | `LabeledBuilder` | `[x]` |
