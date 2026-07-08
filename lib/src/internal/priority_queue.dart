@@ -12,6 +12,9 @@ class PriorityQueue<T> {
   bool get isNotEmpty => _heap.isNotEmpty;
   int get length => _heap.length;
 
+  /// The smallest element according to [compare], or `null` if empty.
+  T? get peek => _heap.isEmpty ? null : _heap.first;
+
   void push(T value) {
     _heap.add(value);
     _siftUp(_heap.length - 1);

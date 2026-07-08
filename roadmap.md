@@ -22,9 +22,9 @@ Our goal is systematic functional parity with identical modular structures and r
 | **Widest Path** | `Yog.Pathfinding` | `Dijkstra.widestPath` | `[x]` |
 | **Unweighted SSSP** | `Yog.Pathfinding` | `Traversal` / BFS shortest path | `[x]` |
 | **Johnson's** | `Yog.Pathfinding.Johnson` | `Johnson` | `[x]` |
-| **Bidirectional Dijkstra** | `Yog.Pathfinding.Bidirectional` | - | `[ ]` |
-| **Bidirectional BFS** | `Yog.Pathfinding.Bidirectional` | - | `[ ]` |
-| **Yen's K-Shortest** | `Yog.Pathfinding.Yen` | - | `[ ]` |
+| **Bidirectional Dijkstra** | `Yog.Pathfinding.Bidirectional` | `BidirectionalDijkstra.shortestPath` | `[x]` |
+| **Bidirectional BFS** | `Yog.Pathfinding.Bidirectional` | `BidirectionalBfs.shortestPath` | `[x]` |
+| **Yen's K-Shortest** | `Yog.Pathfinding.Yen` | `Yen.kShortestPaths` | `[x]` |
 | **Brandes SSSP** | `Yog.Pathfinding.Brandes` | `Brandes` (Accumulation) | `[x]` |
 | **Chinese Postman** | `Yog.Pathfinding.ChinesePostman` | - | `[ ]` |
 | **LCA (Binary Lifting)** | `Yog.Pathfinding.LCA` | - | `[ ]` |

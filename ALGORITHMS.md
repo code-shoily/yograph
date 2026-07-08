@@ -30,6 +30,9 @@ All shortest path algorithms operate on `WeightedWalkable<N, E>` graphs and prod
 | **Bellman-Ford** | `BellmanFord.shortestPath()` | Yes | Yes | Returns success path, negative-cycle, or unreachable result. |
 | **Floyd-Warshall** | `FloydWarshall.allPairs()` | Yes | Yes | Dense APSP; returns full distance matrix. |
 | **Johnson** | `Johnson.allPairs()`, `Johnson.hasNegativeCycle()` | Yes | Yes | Sparse APSP via Bellman-Ford potentials + Dijkstra per node. |
+| **Bidirectional Dijkstra** | `BidirectionalDijkstra.shortestPath()` | No | No | Simultaneous forward/backward search; falls back to Dijkstra on non-[Bidirectional] graphs. |
+| **Bidirectional BFS** | `BidirectionalBfs.shortestPath()` | No | No | Fewest-edge path; falls back to unidirectional BFS on non-[Bidirectional] graphs. |
+| **Yen's K-Shortest** | `Yen.kShortestPaths()` | No | No | Returns up to [k] shortest loopless paths, ordered by weight. |
 | **Strategy Router** | `Pathfinding.shortestPath()` | No | No | Default strategy is Dijkstra; accepts pluggable `PointToPointStrategy`. |
 
 ### Complexity
@@ -39,6 +42,9 @@ All shortest path algorithms operate on `WeightedWalkable<N, E>` graphs and prod
 - Bellman-Ford: `O(V × E)`
 - Floyd-Warshall: `O(V³)`
 - Johnson: `O(V × E log V)` with Fibonacci-style heap; `O(V × E + V² log V)` amortized for non-negative reweighted edges
+- Bidirectional Dijkstra: `O((V + E) log V)` worst case, typically visits far fewer nodes
+- Bidirectional BFS: `O(V + E)` worst case, typically visits far fewer nodes
+- Yen's K-Shortest: `O(k × N × (E + V log V))`
 
 ---
 

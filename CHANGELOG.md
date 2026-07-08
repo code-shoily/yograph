@@ -1,3 +1,15 @@
+## UNRELEASED
+
+### Pathfinding
+
+- Add **Bidirectional Dijkstra** (`BidirectionalDijkstra.shortestPath()`) for faster single-pair shortest-path queries on [Bidirectional] graphs; falls back to Dijkstra otherwise.
+- Add **Bidirectional BFS** (`BidirectionalBfs.shortestPath()`) for fewest-edge single-pair paths; falls back to unidirectional BFS otherwise.
+- Add **Yen's K-Shortest Paths** (`Yen.kShortestPaths()`) for finding up to [k] shortest loopless paths, ordered by weight.
+
+### Documentation
+
+- Update README, `ALGORITHMS.md`, and `roadmap.md` to reflect the new pathfinding algorithms.
+
 ## 0.3.0 - Paths, DAGs, Matching, Transforms & Communities
 
 ### Pathfinding

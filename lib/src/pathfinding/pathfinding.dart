@@ -1,9 +1,11 @@
 export 'a_star.dart';
 export 'bellman_ford.dart';
+export 'bidirectional.dart';
 export 'dijkstra.dart';
 export 'floyd_warshall.dart';
 export 'johnson.dart';
 export 'strategy.dart';
+export 'yen.dart';
 
 import '../model/roles.dart';
 import '../path.dart';

@@ -40,6 +40,9 @@ Yograph includes algorithms for the following areas:
 **Bellman-Ford** — `BellmanFord.shortestPath()`, negative cycle detection  
 **Floyd-Warshall** — `FloydWarshall.allPairs()`, all-pairs shortest paths  
 **Johnson** — `Johnson.allPairs()`, all-pairs shortest paths with negative weights (no negative cycles)  
+**Bidirectional Dijkstra** — `BidirectionalDijkstra.shortestPath()`, faster single-pair search  
+**Bidirectional BFS** — `BidirectionalBfs.shortestPath()`, fewest-edge single-pair search  
+**Yen's K-Shortest** — `Yen.kShortestPaths()`, up to [k] shortest loopless paths  
 **Widest Path** — `Dijkstra.widestPath()`, maximum bottleneck routing  
 
 All pathfinding algorithms support custom semirings via optional `add` and `compare` callbacks.
