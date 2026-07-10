@@ -8,8 +8,9 @@ import 'dart:math' as math;
 
 import '../model/graph_kind.dart';
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
+import '../pathfinding/a_star.dart';
 import '../pathfinding/dijkstra.dart';
-import '../pathfinding/strategy.dart';
 import '../simple_graph.dart';
 
 /// Static container for all health metrics.
@@ -27,37 +28,29 @@ abstract final class Health {
   ///
   /// Returns `null` if the graph is disconnected or empty.
   ///
-  /// Custom semirings may be supplied via [zero], [add] and [compare];
-  /// defaults are standard `double` addition and ordering.
+  /// Custom edge-weight semantics may be supplied via [algebra].
   ///
   /// Time complexity: **O(V × (E log V))**.
   static double? diameter<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
     if (nodes.isEmpty) return null;
 
-    final compareFn = compare ?? defaultCompare;
-    final eccentricities = <double>[];
+    final eccentricities = <E>[];
 
     for (final node in nodes) {
-      final ecc = eccentricity(
-        graph,
-        node,
-        zero: zero,
-        add: add,
-        compare: compare,
-      );
+      final ecc = _eccentricityE(graph, node, algebra: alg);
       if (ecc == null) return null;
       eccentricities.add(ecc);
     }
 
-    return eccentricities.reduce((max, ecc) {
-      return compareFn(ecc, max) > 0 ? ecc : max;
+    final maxEcc = eccentricities.reduce((max, ecc) {
+      return alg.compare(ecc, max) > 0 ? ecc : max;
     });
+    return alg.toDouble(maxEcc);
   }
 
   /// The radius is the minimum eccentricity.
@@ -67,63 +60,62 @@ abstract final class Health {
   /// Time complexity: **O(V × (E log V))**.
   static double? radius<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
     if (nodes.isEmpty) return null;
 
-    final compareFn = compare ?? defaultCompare;
-    final eccentricities = <double>[];
+    final eccentricities = <E>[];
 
     for (final node in nodes) {
-      final ecc = eccentricity(
-        graph,
-        node,
-        zero: zero,
-        add: add,
-        compare: compare,
-      );
+      final ecc = _eccentricityE(graph, node, algebra: alg);
       if (ecc == null) return null;
       eccentricities.add(ecc);
     }
 
-    return eccentricities.reduce((min, ecc) {
-      return compareFn(ecc, min) < 0 ? ecc : min;
+    final minEcc = eccentricities.reduce((min, ecc) {
+      return alg.compare(ecc, min) < 0 ? ecc : min;
     });
+    return alg.toDouble(minEcc);
   }
 
   /// Eccentricity is the maximum distance from a node to all other nodes.
   ///
   /// Returns `null` if the node cannot reach all other nodes.
-  /// For a single-node graph returns [zero].
+  /// For a single-node graph returns the zero weight.
   ///
   /// Time complexity: **O((V + E) log V)**.
   static double? eccentricity<N, E>(
     WeightedWalkable<N, E> graph,
     int node, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
+  }) {
+    final alg = resolveAlgebra<E>(algebra);
+    final ecc = _eccentricityE(graph, node, algebra: alg);
+    if (ecc == null) return null;
+    return alg.toDouble(ecc);
+  }
+
+  static E? _eccentricityE<N, E>(
+    WeightedWalkable<N, E> graph,
+    int node, {
+    required WeightAlgebra<E> algebra,
   }) {
     final nodes = graph.nodeIds.toList();
     final n = nodes.length;
-    if (n <= 1) return zero;
+    if (n <= 1) return algebra.zero;
 
     final distances = Dijkstra.singleSourceDistances(
       graph,
       node,
-      zero: zero,
-      add: add,
-      compare: compare,
+      algebra: algebra,
     );
 
     if (distances.length < n) return null;
 
-    final compareFn = compare ?? defaultCompare;
     return distances.values.reduce((max, dist) {
-      return compareFn(dist, max) > 0 ? dist : max;
+      return algebra.compare(dist, max) > 0 ? dist : max;
     });
   }
 
@@ -196,10 +188,9 @@ abstract final class Health {
   /// Time complexity: **O(V × (E log V))**.
   static double? averagePathLength<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
     final n = nodes.length;
     if (n <= 1) return null;
@@ -209,18 +200,16 @@ abstract final class Health {
       final distances = Dijkstra.singleSourceDistances(
         graph,
         source,
-        zero: zero,
-        add: add,
-        compare: compare,
+        algebra: alg,
       );
       if (distances.length < n) return null;
 
       for (final entry in distances.entries) {
-        total += entry.value;
+        total += alg.toDouble(entry.value);
       }
     }
 
-    final zeroDistances = n * zero;
+    final zeroDistances = n * alg.toDouble(alg.zero);
     final numPairs = n * (n - 1);
     return (total - zeroDistances) / numPairs;
   }
@@ -239,23 +228,18 @@ abstract final class Health {
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (from == to) return 0.0;
+    final alg = resolveAlgebra<E>(algebra);
 
-    final distances = Dijkstra.singleSourceDistances(
-      graph,
-      from,
-      zero: zero,
-      add: add,
-      compare: compare,
-    );
+    final distances = Dijkstra.singleSourceDistances(graph, from, algebra: alg);
 
     final dist = distances[to];
-    if (dist == null || dist == 0.0) return 0.0;
-    return 1.0 / dist;
+    if (dist == null) return 0.0;
+    final distD = alg.toDouble(dist);
+    if (distD == 0.0) return 0.0;
+    return 1.0 / distD;
   }
 
   /// Global efficiency of the graph.
@@ -267,10 +251,9 @@ abstract final class Health {
   /// Time complexity: **O(V × (E log V))**.
   static double globalEfficiency<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
     final n = nodes.length;
     if (n <= 1) return 0.0;
@@ -280,16 +263,17 @@ abstract final class Health {
       final distances = Dijkstra.singleSourceDistances(
         graph,
         source,
-        zero: zero,
-        add: add,
-        compare: compare,
+        algebra: alg,
       );
 
       for (final target in nodes) {
         if (target == source) continue;
         final dist = distances[target];
-        if (dist != null && dist != 0.0) {
-          total += 1.0 / dist;
+        if (dist != null) {
+          final distD = alg.toDouble(dist);
+          if (distD != 0.0) {
+            total += 1.0 / distD;
+          }
         }
       }
     }
@@ -310,9 +294,7 @@ abstract final class Health {
   static double localEfficiency<N, E>(
     Bidirectional<N, E> graph,
     int node, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     final neighbors = _neighborIds(graph, node);
     if (neighbors.length <= 1) return 0.0;
@@ -331,7 +313,7 @@ abstract final class Health {
       }
     }
 
-    return globalEfficiency(subgraph, zero: zero, add: add, compare: compare);
+    return globalEfficiency(subgraph, algebra: algebra);
   }
 
   /// Average local efficiency over all nodes.
@@ -341,22 +323,14 @@ abstract final class Health {
   /// Time complexity: **O(V × d² × (d + E') log d)**.
   static double averageLocalEfficiency<N, E>(
     Bidirectional<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     final nodes = graph.nodeIds.toList();
     if (nodes.isEmpty) return 0.0;
 
     var total = 0.0;
     for (final node in nodes) {
-      total += localEfficiency(
-        graph,
-        node,
-        zero: zero,
-        add: add,
-        compare: compare,
-      );
+      total += localEfficiency(graph, node, algebra: algebra);
     }
 
     return total / nodes.length;

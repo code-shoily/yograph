@@ -1,4 +1,5 @@
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import '../path.dart';
 
 /// Strategy interface for point-to-point shortest-path algorithms.
@@ -8,28 +9,24 @@ import '../path.dart';
 /// accepts a [PointToPointStrategy] so callers can swap algorithms at
 /// runtime.
 ///
+/// The [WeightAlgebra] parameter allows algorithms to work with any edge
+/// data type — not just `double` — mirroring the Elixir ring protocol pattern.
+///
 /// ```dart
 /// final path = Pathfinding.shortestPath(
 ///   graph, 0, 5,
 ///   strategy: AStar(heuristic: manhattan),
+///   algebra: RoadByKm.instance,
 /// );
 /// ```
 abstract interface class PointToPointStrategy {
   /// Finds a path from [from] to [to] on [graph].
   ///
   /// Returns `null` when no path exists.
-  Path? find<N, E>(
+  Path<E>? find<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E> algebra,
   });
 }
-
-/// Default weight combination: addition.
-double defaultAdd(double a, double b) => a + b;
-
-/// Default weight comparison: ascending order.
-int defaultCompare(double a, double b) => a.compareTo(b);

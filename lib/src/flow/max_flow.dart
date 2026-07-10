@@ -1,3 +1,6 @@
+import '../model/graph_kind.dart';
+import '../model/mutable.dart';
+import '../model/roles.dart';
 import '../simple_graph.dart';
 import 'max_flow_result.dart';
 import 'min_cut_result.dart';
@@ -9,14 +12,21 @@ abstract final class MaxFlow {
   /// Edmonds-Karp is an implementation of Ford-Fulkerson using BFS
   /// to find shortest augmenting paths. Complexity is O(V E^2).
   static MaxFlowResult<N> edmondsKarp<N>(
-    SimpleGraph<N, num> graph,
+    WeightedWalkable<N, num> graph,
     int source,
-    int sink,
-  ) {
+    int sink, {
+    GraphCreator<N, double>? createGraph,
+  }) {
     _validateInputs(graph, source, sink);
 
     if (source == sink) {
-      return _zeroFlowResult(graph, source, sink, 'Edmonds-Karp');
+      return _zeroFlowResult(
+        graph,
+        source,
+        sink,
+        'Edmonds-Karp',
+        createGraph: createGraph,
+      );
     }
 
     final nodes = graph.nodeIds.toList();
@@ -54,7 +64,11 @@ abstract final class MaxFlow {
 
     return MaxFlowResult(
       maxFlow: maxFlow,
-      residualGraph: _buildResidualGraph(graph, residual),
+      residualGraph: _buildResidualGraph(
+        graph,
+        residual,
+        createGraph: createGraph,
+      ),
       source: source,
       sink: sink,
       algorithm: 'Edmonds-Karp',
@@ -66,14 +80,21 @@ abstract final class MaxFlow {
   /// Dinic's algorithm constructs a level graph using BFS and finds
   /// blocking flows using DFS. Complexity is O(V^2 E).
   static MaxFlowResult<N> dinic<N>(
-    SimpleGraph<N, num> graph,
+    WeightedWalkable<N, num> graph,
     int source,
-    int sink,
-  ) {
+    int sink, {
+    GraphCreator<N, double>? createGraph,
+  }) {
     _validateInputs(graph, source, sink);
 
     if (source == sink) {
-      return _zeroFlowResult(graph, source, sink, 'Dinic');
+      return _zeroFlowResult(
+        graph,
+        source,
+        sink,
+        'Dinic',
+        createGraph: createGraph,
+      );
     }
 
     final nodes = graph.nodeIds.toList();
@@ -120,7 +141,11 @@ abstract final class MaxFlow {
 
     return MaxFlowResult(
       maxFlow: maxFlow,
-      residualGraph: _buildResidualGraph(graph, residual),
+      residualGraph: _buildResidualGraph(
+        graph,
+        residual,
+        createGraph: createGraph,
+      ),
       source: source,
       sink: sink,
       algorithm: 'Dinic',
@@ -129,17 +154,24 @@ abstract final class MaxFlow {
 
   /// Finds the maximum flow using the Push-Relabel (Goldberg-Tarjan) algorithm.
   ///
-  /// This implementation uses highest-label selection and the gap heuristic
-  /// for high-performance maximum flow resolution. Complexity is O(V^3).
+  /// This implementation uses highest-label selection and the gap heuristic.
+  /// Complexity is O(V^3).
   static MaxFlowResult<N> pushRelabel<N>(
-    SimpleGraph<N, num> graph,
+    WeightedWalkable<N, num> graph,
     int source,
-    int sink,
-  ) {
+    int sink, {
+    GraphCreator<N, double>? createGraph,
+  }) {
     _validateInputs(graph, source, sink);
 
     if (source == sink) {
-      return _zeroFlowResult(graph, source, sink, 'Push-Relabel');
+      return _zeroFlowResult(
+        graph,
+        source,
+        sink,
+        'Push-Relabel',
+        createGraph: createGraph,
+      );
     }
 
     final nodes = graph.nodeIds.toList();
@@ -302,7 +334,11 @@ abstract final class MaxFlow {
 
     return MaxFlowResult(
       maxFlow: excess[sink] ?? 0.0,
-      residualGraph: _buildResidualGraph(graph, residual),
+      residualGraph: _buildResidualGraph(
+        graph,
+        residual,
+        createGraph: createGraph,
+      ),
       source: source,
       sink: sink,
       algorithm: 'Push-Relabel',
@@ -344,7 +380,7 @@ abstract final class MaxFlow {
   // ===========================================================================
 
   static void _validateInputs(
-    SimpleGraph<dynamic, num> graph,
+    WeightedWalkable<dynamic, num> graph,
     int source,
     int sink,
   ) {
@@ -367,12 +403,14 @@ abstract final class MaxFlow {
   }
 
   static MaxFlowResult<N> _zeroFlowResult<N>(
-    SimpleGraph<N, num> graph,
+    WeightedWalkable<N, num> graph,
     int source,
     int sink,
-    String algorithm,
-  ) {
-    final res = SimpleGraph<N, double>.directed();
+    String algorithm, {
+    GraphCreator<N, double>? createGraph,
+  }) {
+    final creator = createGraph ?? (_) => SimpleGraph<N, double>.directed();
+    final res = creator(GraphKind.directed);
     for (final u in graph.nodeIds) {
       res.addNode(u, data: graph.nodeData(u));
     }
@@ -494,11 +532,13 @@ abstract final class MaxFlow {
     return 0.0;
   }
 
-  static SimpleGraph<N, double> _buildResidualGraph<N>(
-    SimpleGraph<N, num> originalGraph,
-    Map<int, Map<int, double>> residualMap,
-  ) {
-    final graph = SimpleGraph<N, double>.directed();
+  static Mutable<N, double> _buildResidualGraph<N>(
+    WeightedWalkable<N, num> originalGraph,
+    Map<int, Map<int, double>> residualMap, {
+    GraphCreator<N, double>? createGraph,
+  }) {
+    final creator = createGraph ?? (_) => SimpleGraph<N, double>.directed();
+    final graph = creator(GraphKind.directed);
     for (final u in originalGraph.nodeIds) {
       graph.addNode(u, data: originalGraph.nodeData(u));
     }

@@ -2,6 +2,7 @@ import '../disjoint_set.dart';
 import '../internal/priority_queue.dart';
 import '../model/graph_kind.dart';
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import 'mst_edge.dart';
 import 'mst_result.dart';
 
@@ -33,14 +34,18 @@ class MST {
   /// **Time Complexity:** O(E log E)
   ///
   /// Throws [ArgumentError] if [graph] is directed.
-  static MstResult kruskal<N, E>(WeightedWalkable<N, E> graph) {
+  static MstResult<E> kruskal<N, E>(
+    WeightedWalkable<N, E> graph, {
+    WeightAlgebra<E>? algebra,
+  }) {
     _requireUndirected(graph);
+    final alg = _resolveAlgebra<E>(algebra);
 
-    final edges = _extractUniqueEdges(graph);
-    edges.sort((a, b) => a.weight.compareTo(b.weight));
+    final edges = _extractUniqueEdges<N, E>(graph, alg);
+    edges.sort((a, b) => alg.compare(a.weight, b.weight));
 
     final dsu = DisjointSet<int>();
-    final mstEdges = <MstEdge>[];
+    final mstEdges = <MstEdge<E>>[];
 
     for (final edge in edges) {
       if (!dsu.connected(edge.from, edge.to)) {
@@ -49,7 +54,7 @@ class MST {
       }
     }
 
-    return MstResult.fromEdges(mstEdges, 'kruskal', graph.nodeCount);
+    return MstResult.fromEdges(mstEdges, 'kruskal', graph.nodeCount, alg);
   }
 
   /// Finds the Maximum Spanning Tree using Kruskal's algorithm.
@@ -57,14 +62,18 @@ class MST {
   /// Same as [kruskal] but selects the heaviest edges first.
   ///
   /// **Time Complexity:** O(E log E)
-  static MstResult kruskalMax<N, E>(WeightedWalkable<N, E> graph) {
+  static MstResult<E> kruskalMax<N, E>(
+    WeightedWalkable<N, E> graph, {
+    WeightAlgebra<E>? algebra,
+  }) {
     _requireUndirected(graph);
+    final alg = _resolveAlgebra<E>(algebra);
 
-    final edges = _extractUniqueEdges(graph);
-    edges.sort((a, b) => b.weight.compareTo(a.weight));
+    final edges = _extractUniqueEdges<N, E>(graph, alg);
+    edges.sort((a, b) => alg.compare(b.weight, a.weight));
 
     final dsu = DisjointSet<int>();
-    final mstEdges = <MstEdge>[];
+    final mstEdges = <MstEdge<E>>[];
 
     for (final edge in edges) {
       if (!dsu.connected(edge.from, edge.to)) {
@@ -73,7 +82,7 @@ class MST {
       }
     }
 
-    return MstResult.fromEdges(mstEdges, 'kruskal_max', graph.nodeCount);
+    return MstResult.fromEdges(mstEdges, 'kruskal_max', graph.nodeCount, alg);
   }
 
   // =============================================================================
@@ -88,26 +97,34 @@ class MST {
   /// **Time Complexity:** O(E log V)
   ///
   /// Throws [ArgumentError] if [graph] is directed.
-  static MstResult prim<N, E>(WeightedWalkable<N, E> graph, {int? from}) {
+  static MstResult<E> prim<N, E>(
+    WeightedWalkable<N, E> graph, {
+    int? from,
+    WeightAlgebra<E>? algebra,
+  }) {
     _requireUndirected(graph);
+    final alg = _resolveAlgebra<E>(algebra);
 
     if (graph.isEmpty) {
-      return MstResult.fromEdges([], 'prim', 0);
+      return MstResult.fromEdges([], 'prim', 0, alg);
     }
 
     final start = from ?? graph.nodeIds.first;
     if (!graph.hasNode(start)) {
-      return MstResult.fromEdges([], 'prim', graph.nodeCount);
+      return MstResult.fromEdges([], 'prim', graph.nodeCount, alg);
     }
 
-    final pq = PriorityQueue<MstEdge>((a, b) => a.weight.compareTo(b.weight));
+    final pq = PriorityQueue<MstEdge<E>>(
+      (a, b) => alg.compare(a.weight, b.weight),
+    );
 
     final visited = <int>{start};
-    final mstEdges = <MstEdge>[];
+    final mstEdges = <MstEdge<E>>[];
 
     // Seed the PQ with edges from the start node.
     for (final to in graph.successors(start)) {
-      pq.push(MstEdge(start, to, graph.edgeWeight(start, to)));
+      final w = edgeValue(graph, start, to, alg);
+      pq.push(MstEdge(start, to, w));
     }
 
     while (pq.isNotEmpty) {
@@ -120,12 +137,13 @@ class MST {
 
       for (final next in graph.successors(edge.to)) {
         if (!visited.contains(next)) {
-          pq.push(MstEdge(edge.to, next, graph.edgeWeight(edge.to, next)));
+          final w = edgeValue(graph, edge.to, next, alg);
+          pq.push(MstEdge(edge.to, next, w));
         }
       }
     }
 
-    return MstResult.fromEdges(mstEdges, 'prim', graph.nodeCount);
+    return MstResult.fromEdges(mstEdges, 'prim', graph.nodeCount, alg);
   }
 
   /// Finds the Maximum Spanning Tree using Prim's algorithm.
@@ -133,25 +151,33 @@ class MST {
   /// Same as [prim] but selects the heaviest edges first.
   ///
   /// **Time Complexity:** O(E log V)
-  static MstResult primMax<N, E>(WeightedWalkable<N, E> graph, {int? from}) {
+  static MstResult<E> primMax<N, E>(
+    WeightedWalkable<N, E> graph, {
+    int? from,
+    WeightAlgebra<E>? algebra,
+  }) {
     _requireUndirected(graph);
+    final alg = _resolveAlgebra<E>(algebra);
 
     if (graph.isEmpty) {
-      return MstResult.fromEdges([], 'prim_max', 0);
+      return MstResult.fromEdges([], 'prim_max', 0, alg);
     }
 
     final start = from ?? graph.nodeIds.first;
     if (!graph.hasNode(start)) {
-      return MstResult.fromEdges([], 'prim_max', graph.nodeCount);
+      return MstResult.fromEdges([], 'prim_max', graph.nodeCount, alg);
     }
 
-    final pq = PriorityQueue<MstEdge>((a, b) => b.weight.compareTo(a.weight));
+    final pq = PriorityQueue<MstEdge<E>>(
+      (a, b) => alg.compare(b.weight, a.weight),
+    );
 
     final visited = <int>{start};
-    final mstEdges = <MstEdge>[];
+    final mstEdges = <MstEdge<E>>[];
 
     for (final to in graph.successors(start)) {
-      pq.push(MstEdge(start, to, graph.edgeWeight(start, to)));
+      final w = edgeValue(graph, start, to, alg);
+      pq.push(MstEdge(start, to, w));
     }
 
     while (pq.isNotEmpty) {
@@ -164,12 +190,13 @@ class MST {
 
       for (final next in graph.successors(edge.to)) {
         if (!visited.contains(next)) {
-          pq.push(MstEdge(edge.to, next, graph.edgeWeight(edge.to, next)));
+          final w = edgeValue(graph, edge.to, next, alg);
+          pq.push(MstEdge(edge.to, next, w));
         }
       }
     }
 
-    return MstResult.fromEdges(mstEdges, 'prim_max', graph.nodeCount);
+    return MstResult.fromEdges(mstEdges, 'prim_max', graph.nodeCount, alg);
   }
 
   // =============================================================================
@@ -186,15 +213,32 @@ class MST {
   }
 
   /// Extracts each undirected edge exactly once.
-  static List<MstEdge> _extractUniqueEdges<N, E>(WeightedWalkable<N, E> graph) {
-    final edges = <MstEdge>[];
+  static List<MstEdge<E>> _extractUniqueEdges<N, E>(
+    WeightedWalkable<N, E> graph,
+    WeightAlgebra<E> alg,
+  ) {
+    final edges = <MstEdge<E>>[];
     for (final from in graph.nodeIds) {
       for (final to in graph.successors(from)) {
         if (from < to) {
-          edges.add(MstEdge(from, to, graph.edgeWeight(from, to)));
+          final w = edgeValue(graph, from, to, alg);
+          edges.add(MstEdge(from, to, w));
         }
       }
     }
     return edges;
   }
+}
+
+WeightAlgebra<E> _resolveAlgebra<E>(WeightAlgebra<E>? algebra) {
+  if (algebra != null) return algebra;
+  if (E == double || E == dynamic || E == Null || E.toString() == 'void') {
+    return DoubleAlgebra.instance as WeightAlgebra<E>;
+  }
+  if (E == int) {
+    return IntAlgebra.instance as WeightAlgebra<E>;
+  }
+  throw ArgumentError(
+    'A WeightAlgebra<$E> must be supplied for non-double edge types.',
+  );
 }

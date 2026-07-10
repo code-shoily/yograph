@@ -1,36 +1,22 @@
 import '../model/graph_kind.dart';
 import '../model/roles.dart';
-import 'dijkstra.dart';
-import 'strategy.dart';
+import '../model/weight_algebra.dart';
 
 /// Result of a Johnson all-pairs shortest-path query.
-///
-/// * **Success** — [distances] contains the full matrix and
-///   [hasNegativeCycle] is `false`.
-/// * **Negative cycle** — [distances] is `null` and [hasNegativeCycle] is
-///   `true`.
-///
-/// Use [distance] for convenient lookups.
 class JohnsonResult {
-  /// Distance matrix mapping `(from, to)` to shortest distance.
+  /// Distance matrix mapping `(from, to)` to shortest distance as `double`.
   /// `null` when a negative cycle was detected.
   final Map<(int, int), double>? distances;
-
-  /// `true` when a negative-weight cycle exists in the graph.
   final bool hasNegativeCycle;
 
   const JohnsonResult._({this.distances, required this.hasNegativeCycle});
 
-  /// Successful query with a valid distance matrix.
   factory JohnsonResult.success(Map<(int, int), double> distances) =>
       JohnsonResult._(distances: distances, hasNegativeCycle: false);
 
-  /// A negative cycle was detected; the distance matrix is undefined.
   factory JohnsonResult.negativeCycle() =>
       const JohnsonResult._(hasNegativeCycle: true);
 
-  /// Returns the shortest distance from [from] to [to], or `null` when
-  /// no path exists or a negative cycle was detected.
   double? distance(int from, int to) => distances?[(from, to)];
 
   @override
@@ -42,23 +28,14 @@ class JohnsonResult {
 
 /// Reweighted view of a graph used during Johnson's algorithm.
 ///
-/// Delegates every query to the underlying graph except [edgeWeight],
-/// which applies the Johnson reweighting formula
-/// `w'(u, v) = w(u, v) + h(u) - h(v)`.
+/// Applies the Johnson reweighting formula using [WeightAlgebra]:
+/// `w'(u, v) = w(u, v) + h(u) - h(v)`
 class _ReweightedGraph<N, E> implements WeightedWalkable<N, E> {
   final WeightedWalkable<N, E> _graph;
   final Map<int, double> _potentials;
-  final double Function(double, double) _add;
-  final double Function(double, double) _subtract;
-  final double _zero;
+  final WeightAlgebra<E> _algebra;
 
-  _ReweightedGraph(
-    this._graph,
-    this._potentials,
-    this._add,
-    this._subtract,
-    this._zero,
-  );
+  _ReweightedGraph(this._graph, this._potentials, this._algebra);
 
   @override
   GraphKind get kind => _graph.kind;
@@ -67,7 +44,13 @@ class _ReweightedGraph<N, E> implements WeightedWalkable<N, E> {
   bool get isEmpty => _graph.isEmpty;
 
   @override
+  bool get isNotEmpty => _graph.isNotEmpty;
+
+  @override
   int get nodeCount => _graph.nodeCount;
+
+  @override
+  int get edgeCount => _graph.edgeCount;
 
   @override
   Iterable<int> get nodeIds => _graph.nodeIds;
@@ -89,92 +72,62 @@ class _ReweightedGraph<N, E> implements WeightedWalkable<N, E> {
 
   @override
   double edgeWeight(int from, int to) {
-    final weight = _graph.edgeWeight(from, to);
-    final hFrom = _potentials[from] ?? _zero;
-    final hTo = _potentials[to] ?? _zero;
+    final raw = edgeValue(_graph, from, to, _algebra);
+    final hFrom = _potentials[from] ?? 0.0;
+    final hTo = _potentials[to] ?? 0.0;
     // w'(u, v) = w(u, v) + h(u) - h(v)
-    return _add(weight, _subtract(hFrom, hTo));
+    return _algebra.toDouble(raw) + hFrom - hTo;
   }
 }
 
 /// Johnson's algorithm for all-pairs shortest paths.
 ///
-/// Computes shortest paths between every pair of nodes by reweighting the
-/// graph to eliminate negative edges, then running Dijkstra's algorithm from
-/// every node.  Best suited for sparse graphs where Floyd-Warshall's
-/// O(V³) cost would be prohibitive.
+/// Works with any edge type [E] through [WeightAlgebra<E>].
+/// The distance matrix is always returned as `double` (via [WeightAlgebra.toDouble])
+/// since it is used for reweighting arithmetic internally.
 ///
 /// ```dart
 /// final result = Johnson.allPairs(graph);
 /// if (!result.hasNegativeCycle) {
-///   print(result.distance(0, 5)); // shortest 0→5 distance
+///   print(result.distance(0, 5));
 /// }
 /// ```
-///
-/// The optional [subtract] function is used during reweighting.  It defaults
-/// to numeric subtraction and should be the inverse of [add] for the
-/// reweighting to be valid.
 abstract final class Johnson {
   Johnson._();
 
   /// Computes shortest paths between all pairs of nodes.
   ///
-  /// Returns a [JohnsonResult] containing the full distance matrix,
-  /// or indicating a negative cycle.
-  ///
   /// **Time complexity:** O(V × E log V)
-  ///
-  /// **Space complexity:** O(V²)
   static JohnsonResult allPairs<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    double Function(double, double)? subtract,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    final addFn = add ?? defaultAdd;
-    final subtractFn = subtract ?? _defaultSubtract;
-    final compareFn = compare ?? defaultCompare;
-
+    final alg = _resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
-    final nodeCount = nodes.length;
 
-    if (nodeCount == 0) {
+    if (nodes.isEmpty) {
       return JohnsonResult.success(const {});
     }
 
-    final potentials = _computePotentials(graph, nodes, zero, addFn, compareFn);
+    final potentials = _computePotentials(graph, nodes, alg);
     if (potentials == null) {
       return JohnsonResult.negativeCycle();
     }
 
-    final reweighted = _ReweightedGraph<N, E>(
-      graph,
-      potentials,
-      addFn,
-      subtractFn,
-      zero,
-    );
-
+    final reweighted = _ReweightedGraph<N, E>(graph, potentials, alg);
     final distances = <(int, int), double>{};
 
+    // Use internal double-based Dijkstra on the reweighted graph.
+    // edgeWeight is overridden in _ReweightedGraph to return reweighted doubles.
     for (final source in nodes) {
-      final reweightedDistances = Dijkstra.singleSourceDistances(
-        reweighted,
-        source,
-        zero: zero,
-        add: add,
-        compare: compare,
-      );
-
-      final hSource = potentials[source] ?? zero;
+      final reweightedDists = _dijkstraDoubles(reweighted, source);
+      final hSource = potentials[source] ?? 0.0;
 
       for (final MapEntry(key: dest, value: reweightedDist)
-          in reweightedDistances.entries) {
-        final hDest = potentials[dest] ?? zero;
+          in reweightedDists.entries) {
+        final hDest = potentials[dest] ?? 0.0;
         // dist(u, v) = dist'(u, v) - h(u) + h(v)
-        final adjusted = addFn(subtractFn(reweightedDist, hSource), hDest);
-        distances[(source, dest)] = adjusted;
+        distances[(source, dest)] = reweightedDist - hSource + hDest;
       }
     }
 
@@ -182,58 +135,44 @@ abstract final class Johnson {
   }
 
   /// Returns `true` when the graph contains a negative-weight cycle.
-  ///
-  /// This is cheaper than running the full algorithm — it stops after the
-  /// Bellman-Ford potential-computation phase.
   static bool hasNegativeCycle<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
-
+    final alg = _resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
-    return _computePotentials(graph, nodes, zero, addFn, compareFn) == null;
+    return _computePotentials(graph, nodes, alg) == null;
   }
 
   /// Computes Johnson's node potentials using Bellman-Ford from a virtual
-  /// source connected to every node with a zero-weight edge.
+  /// source with zero-weight edges to every real node.
   ///
   /// Returns `null` when a negative cycle is detected.
   static Map<int, double>? _computePotentials<N, E>(
     WeightedWalkable<N, E> graph,
     List<int> nodes,
-    double zero,
-    double Function(double, double) add,
-    int Function(double, double) compare,
+    WeightAlgebra<E> alg,
   ) {
-    final nodeCount = nodes.length;
     final distances = <int, double>{};
-
-    // The virtual source gives every real node an initial distance of zero.
     for (final node in nodes) {
-      distances[node] = zero;
+      distances[node] = alg.toDouble(alg.zero);
     }
 
-    final edges = <(int from, int to, double weight)>[];
+    final edges = <(int, int, double)>[];
     for (final u in nodes) {
       for (final v in graph.successors(u)) {
-        edges.add((u, v, graph.edgeWeight(u, v)));
+        edges.add((u, v, alg.toDouble(edgeValue(graph, u, v, alg))));
       }
     }
 
-    // V - 1 relaxation passes with early termination.
-    for (var i = 0; i < nodeCount - 1; i++) {
+    for (var i = 0; i < nodes.length - 1; i++) {
       var changed = false;
       for (final (u, v, weight) in edges) {
         final distU = distances[u];
         if (distU == null) continue;
-
-        final newDist = add(distU, weight);
-        final currentDist = distances[v];
-        if (currentDist == null || compare(newDist, currentDist) < 0) {
+        final newDist = distU + weight;
+        final cur = distances[v];
+        if (cur == null || newDist < cur) {
           distances[v] = newDist;
           changed = true;
         }
@@ -241,20 +180,58 @@ abstract final class Johnson {
       if (!changed) break;
     }
 
-    // One more pass to detect negative cycles.
     for (final (u, v, weight) in edges) {
       final distU = distances[u];
       if (distU == null) continue;
-
-      final newDist = add(distU, weight);
-      final currentDist = distances[v];
-      if (currentDist == null || compare(newDist, currentDist) < 0) {
-        return null;
-      }
+      final newDist = distU + weight;
+      final cur = distances[v];
+      if (cur == null || newDist < cur) return null;
     }
 
     return distances;
   }
 
-  static double _defaultSubtract(double a, double b) => a - b;
+  /// Internal double-based Dijkstra that reads via `edgeWeight` (double).
+  /// Used on the reweighted graph where edgeWeight already applies h(u)-h(v).
+  static Map<int, double> _dijkstraDoubles<N, E>(
+    WeightedWalkable<N, E> graph,
+    int source,
+  ) {
+    // Inline simple Dijkstra over doubles using edgeWeight.
+    final pq = <(double, int)>[];
+    void push(double d, int n) {
+      pq.add((d, n));
+      pq.sort((a, b) => a.$1.compareTo(b.$1));
+    }
+
+    push(0.0, source);
+    final dist = <int, double>{source: 0.0};
+
+    while (pq.isNotEmpty) {
+      final (d, u) = pq.removeAt(0);
+      if (d > (dist[u] ?? double.infinity)) continue;
+      for (final v in graph.successors(u)) {
+        final w = graph.edgeWeight(u, v);
+        final nd = d + w;
+        if (nd < (dist[v] ?? double.infinity)) {
+          dist[v] = nd;
+          push(nd, v);
+        }
+      }
+    }
+    return dist;
+  }
+}
+
+WeightAlgebra<E> _resolveAlgebra<E>(WeightAlgebra<E>? algebra) {
+  if (algebra != null) return algebra;
+  if (E == double || E == dynamic || E == Null || E.toString() == 'void') {
+    return DoubleAlgebra.instance as WeightAlgebra<E>;
+  }
+  if (E == int) {
+    return IntAlgebra.instance as WeightAlgebra<E>;
+  }
+  throw ArgumentError(
+    'A WeightAlgebra<$E> must be supplied for non-double edge types.',
+  );
 }

@@ -11,7 +11,8 @@ library;
 
 import '../internal/priority_queue.dart';
 import '../model/roles.dart';
-import '../pathfinding/strategy.dart';
+import '../model/weight_algebra.dart';
+import '../pathfinding/a_star.dart';
 
 /// The three artifacts produced by the discovery phase.
 class BrandesDiscovery {
@@ -40,42 +41,40 @@ abstract final class Brandes {
   static BrandesDiscovery runDiscovery<N, E>(
     WeightedWalkable<N, E> graph,
     int source, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = resolveAlgebra<E>(algebra);
+    final pq = PriorityQueue<(double, E, int)>(
+      (a, b) => alg.compare(a.$2, b.$2),
+    );
+    pq.push((alg.toDouble(alg.zero), alg.zero, source));
 
-    final pq = PriorityQueue<(double, int)>((a, b) => compareFn(a.$1, b.$1));
-    pq.push((zero, source));
-
-    final dist = <int, double>{source: zero};
+    final dist = <int, E>{source: alg.zero};
     final sigma = <int, int>{source: 1};
     final preds = <int, List<int>>{};
     final stack = <int>[];
 
     while (pq.isNotEmpty) {
-      final (dV, v) = pq.pop()!;
+      final (_, dV, v) = pq.pop()!;
 
       // Skip stale entries (lazy deletion)
       final best = dist[v];
-      if (best != null && compareFn(dV, best) > 0) continue;
+      if (best != null && alg.compare(dV, best) > 0) continue;
 
       stack.add(v);
 
       for (final w in graph.successors(v)) {
-        final weight = graph.edgeWeight(v, w);
-        final newDist = addFn(dV, weight);
+        final weight = edgeValue(graph, v, w, alg);
+        final newDist = alg.add(dV, weight);
         final oldDist = dist[w];
 
-        if (oldDist == null || compareFn(newDist, oldDist) < 0) {
+        if (oldDist == null || alg.compare(newDist, oldDist) < 0) {
           // Found a strictly shorter path
           dist[w] = newDist;
           sigma[w] = sigma[v] ?? 0;
           preds[w] = [v];
-          pq.push((newDist, w));
-        } else if (compareFn(newDist, oldDist) == 0) {
+          pq.push((alg.toDouble(newDist), newDist, w));
+        } else if (alg.compare(newDist, oldDist) == 0) {
           // Found an alternative shortest path
           sigma[w] = (sigma[w] ?? 0) + (sigma[v] ?? 0);
           preds[w] = [...(preds[w] ?? []), v];

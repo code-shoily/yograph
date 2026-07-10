@@ -1,4 +1,6 @@
 import '../model/graph_kind.dart';
+import '../model/roles.dart';
+import '../model/mutable.dart';
 import '../simple_graph.dart';
 import '../internal/priority_queue.dart';
 import 'max_flow.dart';
@@ -8,19 +10,20 @@ import 'min_cut_result.dart';
 abstract final class MinCut {
   /// Computes the minimum s-t cut using a maximum flow algorithm.
   static MinCutResult stMinCut<N>(
-    SimpleGraph<N, num> graph,
+    WeightedWalkable<N, num> graph,
     int source,
     int sink, {
     String algorithm = 'Dinic',
+    GraphCreator<N, double>? createGraph,
   }) {
     final normAlg = algorithm
         .replaceAll(RegExp(r'[^a-zA-Z]'), '')
         .toLowerCase();
     final flowResult = normAlg == 'edmondskarp'
-        ? MaxFlow.edmondsKarp(graph, source, sink)
+        ? MaxFlow.edmondsKarp(graph, source, sink, createGraph: createGraph)
         : normAlg == 'pushrelabel'
-        ? MaxFlow.pushRelabel(graph, source, sink)
-        : MaxFlow.dinic(graph, source, sink);
+        ? MaxFlow.pushRelabel(graph, source, sink, createGraph: createGraph)
+        : MaxFlow.dinic(graph, source, sink, createGraph: createGraph);
 
     return MaxFlow.extractMinCut(flowResult);
   }
@@ -32,7 +35,7 @@ abstract final class MinCut {
   /// the nodes s and t. The global minimum cut is the minimum of all phase cuts.
   ///
   /// **Time Complexity:** O(V^2 log V + V E) with Priority Queue optimization.
-  static MinCutResult globalMinCut<N>(SimpleGraph<N, num> graph) {
+  static MinCutResult globalMinCut<N>(WeightedWalkable<N, num> graph) {
     if (graph.kind != GraphKind.undirected) {
       throw ArgumentError('Global min cut requires an undirected graph');
     }
@@ -59,8 +62,10 @@ abstract final class MinCut {
       }
     }
 
-    // Create a mutable copy of the graph to perform contractions on
-    final tempGraph = SimpleGraph<N, num>.undirected();
+    // Create a mutable working copy for contractions
+    Mutable<N, num> localCreate(GraphKind kind) =>
+        SimpleGraph<N, num>.undirected();
+    final tempGraph = localCreate(GraphKind.undirected);
     for (final u in nodes) {
       tempGraph.addNode(u, data: graph.nodeData(u));
     }
@@ -113,7 +118,7 @@ abstract final class MinCut {
   // ===========================================================================
 
   static (int s, int t, double cutWeight) _maximumAdjacencySearch<N>(
-    SimpleGraph<N, num> graph,
+    WeightedWalkable<N, num> graph,
   ) {
     final nodes = graph.nodeIds.toList();
     final start = nodes.first;
@@ -166,7 +171,7 @@ abstract final class MinCut {
     return (s, t, cutWeight);
   }
 
-  static void _contract<N>(SimpleGraph<N, num> graph, int s, int t) {
+  static void _contract<N>(Mutable<N, num> graph, int s, int t) {
     final tSuccessors = graph.successors(t).toList();
     for (final v in tSuccessors) {
       if (v == s) continue;

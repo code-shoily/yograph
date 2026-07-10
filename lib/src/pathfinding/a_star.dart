@@ -1,5 +1,6 @@
 import '../internal/priority_queue.dart';
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import '../path.dart';
 import '_utils.dart';
 import 'strategy.dart';
@@ -10,101 +11,97 @@ import 'strategy.dart';
 /// find the shortest path in weighted graphs.  It prioritises exploration
 /// toward the goal using `f(n) = g(n) + h(n)`.
 ///
+/// The algorithm works with any edge type [E] through a [WeightAlgebra<E>].
+/// When [E] is `double` and no algebra is supplied, [DoubleAlgebra.instance]
+/// is used automatically — preserving full backwards compatibility.
+///
+/// **Requirements:**
+/// - All edge weights must be non-negative. If the graph contains negative edge
+///   weights, the algorithm is not guaranteed to produce correct results.
+///
 /// ## Heuristic requirements
 ///
 /// For optimality the heuristic must be **admissible** (never over-estimate
 /// the true cost).  Consistency (`h(n) ≤ c(n,n') + h(n')`) is also desirable.
 ///
 /// ```dart
-/// final path = AStar.aStar(
-///   graph,
-///   0, 5,
-///   heuristic: (node, goal) => estimate[node] ?? 0.0,
+/// // Unchanged existing usage (double edges):
+/// final path = AStar.aStar(graph, 0, 5, heuristic: manhattan);
+///
+/// // Custom algebra:
+/// final path = AStar.aStar(graph, 0, 5,
+///   heuristic: (_, _) => 0.0,
+///   algebra: RoadByKm.instance,
 /// );
 /// ```
 class AStar implements PointToPointStrategy {
   final double Function(int node, int goal) _heuristic;
 
-  /// Creates an A* strategy with the given [heuristic].
-  ///
-  /// [heuristic] estimates the cost from any node to the goal.
   AStar({required this._heuristic});
 
   @override
-  Path? find<N, E>(
+  Path<E>? find<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    return aStar(
-      graph,
-      from,
-      to,
-      heuristic: _heuristic,
-      zero: zero,
-      add: add,
-      compare: compare,
-    );
+    return aStar(graph, from, to, heuristic: _heuristic, algebra: algebra);
   }
 
   /// Finds the shortest path from [from] to [to] using A*.
   ///
-  /// Returns `null` when [from] or [to] does not exist, or when no path
-  /// connects them.
-  ///
   /// **Time complexity:** O((V + E) log V) with a good heuristic.
-  static Path? aStar<N, E>(
+  static Path<E>? aStar<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
     required double Function(int node, int goal) heuristic,
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = resolveAlgebra<E>(algebra);
     if (!graph.hasNode(from) || !graph.hasNode(to)) return null;
-    if (from == to) return Path([from], zero);
+    if (from == to) return Path([from], alg.zero);
 
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
-
-    final pq = PriorityQueue<(double f, double g, int node)>((a, b) {
-      final cmp = compareFn(a.$1, b.$1);
+    // We use double scalars for the priority queue and store typed weights
+    // alongside so the final result carries the full typed weight.
+    final pq = PriorityQueue<(double f, double g, E gTyped, int node)>((a, b) {
+      final cmp = a.$1.compareTo(b.$1);
       if (cmp != 0) return cmp;
-      // Tie-break: prefer larger g (closer to goal).
-      return compareFn(b.$2, a.$2);
+      return b.$2.compareTo(a.$2); // tie-break: prefer larger g
     });
 
+    final zero = alg.zero;
+    final zeroD = alg.toDouble(zero);
     final h0 = heuristic(from, to);
-    pq.push((addFn(zero, h0), zero, from));
+    pq.push((zeroD + h0, zeroD, zero, from));
 
-    final gScores = <int, double>{from: zero};
+    final gScores = <int, double>{from: zeroD};
+    final gTyped = <int, E>{from: zero};
     final predecessors = <int, int>{};
 
     while (pq.isNotEmpty) {
-      final (_, g, node) = pq.pop()!;
+      final (_, g, gT, node) = pq.pop()!;
 
       final bestG = gScores[node];
-      if (bestG == null || compareFn(g, bestG) > 0) continue;
+      if (bestG == null || g > bestG) continue;
 
       if (node == to) {
-        return Path(reconstructPath(predecessors, to), g);
+        return Path(reconstructPath(predecessors, to), gT);
       }
 
       for (final succ in graph.successors(node)) {
-        final edgeCost = graph.edgeWeight(node, succ);
-        final newG = addFn(g, edgeCost);
+        final edgeRaw = edgeValue(graph, node, succ, alg);
+        final newGTyped = alg.add(gT, edgeRaw);
+        final newG = alg.toDouble(newGTyped);
 
         final existingG = gScores[succ];
-        if (existingG == null || compareFn(newG, existingG) < 0) {
+        if (existingG == null || newG < existingG) {
           gScores[succ] = newG;
+          gTyped[succ] = newGTyped;
           predecessors[succ] = node;
           final h = heuristic(succ, to);
-          final f = addFn(newG, h);
-          pq.push((f, newG, succ));
+          pq.push((newG + h, newG, newGTyped, succ));
         }
       }
     }
@@ -140,10 +137,6 @@ class AStar implements PointToPointStrategy {
   }
 
   /// Runs A* on an implicit state space with a custom deduplication key.
-  ///
-  /// [visitedBy] extracts a lightweight key from each state.  Two states
-  /// with the same key are considered equivalent; only the best (lowest
-  /// cost) instance is kept.
   static (S state, double cost)? implicitAStarBy<S, K>({
     required S from,
     required Iterable<(S, double)> Function(S) successors,
@@ -154,8 +147,8 @@ class AStar implements PointToPointStrategy {
     double Function(double, double)? add,
     int Function(double, double)? compare,
   }) {
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final addFn = add ?? (a, b) => a + b;
+    final compareFn = compare ?? (a, b) => a.compareTo(b);
 
     if (isGoal(from)) return (from, zero);
 
@@ -166,8 +159,7 @@ class AStar implements PointToPointStrategy {
     });
 
     final fromKey = visitedBy(from);
-    final h0 = heuristic(from);
-    pq.push((addFn(zero, h0), zero, from));
+    pq.push((addFn(zero, heuristic(from)), zero, from));
 
     final gScores = <K, double>{fromKey: zero};
 
@@ -187,13 +179,30 @@ class AStar implements PointToPointStrategy {
 
         if (existingG == null || compareFn(newG, existingG) < 0) {
           gScores[nextKey] = newG;
-          final h = heuristic(nextState);
-          final f = addFn(newG, h);
-          pq.push((f, newG, nextState));
+          pq.push((addFn(newG, heuristic(nextState)), newG, nextState));
         }
       }
     }
 
     return null;
   }
+}
+
+/// Resolves an optional [WeightAlgebra<E>], falling back to [DoubleAlgebra]
+/// when [E] is `double` and no algebra is provided.
+///
+/// This is the Elixir-style ring resolution: if you don't supply a ring,
+/// the default numeric ring is used.
+WeightAlgebra<E> resolveAlgebra<E>(WeightAlgebra<E>? algebra) {
+  if (algebra != null) return algebra;
+  if (E == double || E == dynamic || E == Null || E.toString() == 'void') {
+    return DoubleAlgebra.instance as WeightAlgebra<E>;
+  }
+  if (E == int) {
+    return IntAlgebra.instance as WeightAlgebra<E>;
+  }
+  throw ArgumentError(
+    'A WeightAlgebra<$E> must be supplied for non-double edge types. '
+    'Example: Dijkstra.shortestPath(graph, 0, 5, algebra: MyAlgebra.instance)',
+  );
 }

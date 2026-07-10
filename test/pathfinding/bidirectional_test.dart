@@ -59,7 +59,7 @@ void main() {
       expect(path.weight, 3.0);
     });
 
-    test('custom semiring — max-sum path', () {
+    test('custom algebra — max-sum path', () {
       final g = SimpleGraph<String, int>.directed();
       g.addEdge(0, 1, data: 1);
       g.addEdge(0, 2, data: 5);
@@ -68,12 +68,10 @@ void main() {
         g,
         0,
         1,
-        zero: 0.0,
-        add: (a, b) => a + b,
-        compare: (a, b) => b.compareTo(a),
+        algebra: const _MaxSumIntAlgebra(),
       );
       expect(path!.nodes, [0, 2, 1]);
-      expect(path.weight, 10.0);
+      expect(path.weight, 10);
     });
   });
 
@@ -164,4 +162,20 @@ SimpleGraph<String, Null> _unweightedGraph() {
     ..addEdge(4, 3)
     ..addEdge(3, 5)
     ..addEdge(2, 5);
+}
+
+class _MaxSumIntAlgebra implements WeightAlgebra<int> {
+  const _MaxSumIntAlgebra();
+  @override
+  int get zero => 0;
+  @override
+  int get infinity => -1000000000;
+  @override
+  int add(int a, int b) => a + b;
+  @override
+  int subtract(int a, int b) => a - b;
+  @override
+  int compare(int a, int b) => b.compareTo(a);
+  @override
+  double toDouble(int value) => -value.toDouble();
 }

@@ -1,7 +1,8 @@
 import '../model/graph_kind.dart';
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import '../path.dart';
-import '../pathfinding/strategy.dart';
+import '../pathfinding/a_star.dart';
 import '../property/cyclicity.dart';
 import '../traversal/traversal.dart';
 
@@ -76,22 +77,25 @@ abstract final class DAG {
   /// an empty list for an empty graph.
   ///
   /// **Time complexity:** O(V + E)
-  static List<int>? longestPath<N, E>(Bidirectional<N, E> graph) {
+  static List<int>? longestPath<N, E>(
+    Bidirectional<N, E> graph, {
+    WeightAlgebra<E>? algebra,
+  }) {
     if (!isDag(graph)) return null;
+    final alg = resolveAlgebra<E>(algebra);
     final order = topologicalSort(graph)!;
 
-    final distances = <int, double>{for (final id in graph.nodeIds) id: 0.0};
+    final distances = <int, E>{for (final id in graph.nodeIds) id: alg.zero};
     final predecessors = <int, int>{};
 
-    final addFn = defaultAdd;
-    final compareFn = defaultCompare;
-
     for (final node in order) {
-      final dist = distances[node]!;
+      final dist = distances[node];
+      if (dist == null) continue;
       for (final succ in graph.successors(node)) {
-        final weight = graph.edgeWeight(node, succ);
-        final newDist = addFn(dist, weight);
-        if (compareFn(newDist, distances[succ]!) > 0) {
+        final weight = edgeValue(graph, node, succ, alg);
+        final newDist = alg.add(dist, weight);
+        final existingDist = distances[succ];
+        if (existingDist == null || alg.compare(newDist, existingDist) > 0) {
           distances[succ] = newDist;
           predecessors[succ] = node;
         }
@@ -102,7 +106,8 @@ abstract final class DAG {
 
     var bestNode = graph.nodeIds.first;
     for (final entry in distances.entries) {
-      if (compareFn(entry.value, distances[bestNode]!) > 0) {
+      final bestDist = distances[bestNode];
+      if (bestDist != null && alg.compare(entry.value, bestDist) > 0) {
         bestNode = entry.key;
       }
     }
@@ -116,25 +121,21 @@ abstract final class DAG {
   /// missing, or when no path connects them.
   ///
   /// **Time complexity:** O(V + E)
-  static Path? longestPathNodes<N, E>(
+  static Path<E>? longestPathNodes<N, E>(
     Bidirectional<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (!isDag(graph)) return null;
     if (!graph.hasNode(from) || !graph.hasNode(to)) return null;
-    if (from == to) return Path([from], zero);
-
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = resolveAlgebra<E>(algebra);
+    if (from == to) return Path([from], alg.zero);
 
     final order = _orderFrom(graph, from);
     if (order == null) return null;
 
-    final distances = <int, double>{from: zero};
+    final distances = <int, E>{from: alg.zero};
     final predecessors = <int, int>{};
 
     for (final node in order) {
@@ -142,10 +143,10 @@ abstract final class DAG {
       if (dist == null) continue;
 
       for (final succ in graph.successors(node)) {
-        final weight = graph.edgeWeight(node, succ);
-        final newDist = addFn(dist, weight);
+        final weight = edgeValue(graph, node, succ, alg);
+        final newDist = alg.add(dist, weight);
         final currentDist = distances[succ];
-        if (currentDist == null || compareFn(newDist, currentDist) > 0) {
+        if (currentDist == null || alg.compare(newDist, currentDist) > 0) {
           distances[succ] = newDist;
           predecessors[succ] = node;
         }
@@ -164,25 +165,21 @@ abstract final class DAG {
   /// missing, or when no path connects them.
   ///
   /// **Time complexity:** O(V + E)
-  static Path? shortestPath<N, E>(
+  static Path<E>? shortestPath<N, E>(
     Bidirectional<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (!isDag(graph)) return null;
     if (!graph.hasNode(from) || !graph.hasNode(to)) return null;
-    if (from == to) return Path([from], zero);
-
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = resolveAlgebra<E>(algebra);
+    if (from == to) return Path([from], alg.zero);
 
     final order = _orderFrom(graph, from);
     if (order == null) return null;
 
-    final distances = <int, double>{from: zero};
+    final distances = <int, E>{from: alg.zero};
     final predecessors = <int, int>{};
 
     for (final node in order) {
@@ -190,10 +187,10 @@ abstract final class DAG {
       if (dist == null) continue;
 
       for (final succ in graph.successors(node)) {
-        final weight = graph.edgeWeight(node, succ);
-        final newDist = addFn(dist, weight);
+        final weight = edgeValue(graph, node, succ, alg);
+        final newDist = alg.add(dist, weight);
         final currentDist = distances[succ];
-        if (currentDist == null || compareFn(newDist, currentDist) < 0) {
+        if (currentDist == null || alg.compare(newDist, currentDist) < 0) {
           distances[succ] = newDist;
           predecessors[succ] = node;
         }
@@ -213,33 +210,29 @@ abstract final class DAG {
   /// missing or when [graph] is not a DAG.
   ///
   /// **Time complexity:** O(V + E)
-  static Map<int, double> singleSourceDistances<N, E>(
+  static Map<int, E> singleSourceDistances<N, E>(
     Bidirectional<N, E> graph,
     int from, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (!isDag(graph)) return const {};
     if (!graph.hasNode(from)) return const {};
-
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = resolveAlgebra<E>(algebra);
 
     final order = _orderFrom(graph, from);
     if (order == null) return const {};
 
-    final distances = <int, double>{from: zero};
+    final distances = <int, E>{from: alg.zero};
 
     for (final node in order) {
       final dist = distances[node];
       if (dist == null) continue;
 
       for (final succ in graph.successors(node)) {
-        final weight = graph.edgeWeight(node, succ);
-        final newDist = addFn(dist, weight);
+        final weight = edgeValue(graph, node, succ, alg);
+        final newDist = alg.add(dist, weight);
         final currentDist = distances[succ];
-        if (currentDist == null || compareFn(newDist, currentDist) < 0) {
+        if (currentDist == null || alg.compare(newDist, currentDist) < 0) {
           distances[succ] = newDist;
         }
       }

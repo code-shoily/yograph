@@ -8,7 +8,9 @@ export 'strategy.dart';
 export 'yen.dart';
 
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import '../path.dart';
+import 'a_star.dart';
 import 'dijkstra.dart';
 import 'strategy.dart';
 
@@ -36,13 +38,11 @@ abstract final class Pathfinding {
   ///
   /// Returns `null` when [from] or [to] does not exist, or when no path
   /// connects them.
-  static Path? shortestPath<N, E>(
+  static Path<E>? shortestPath<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
     PointToPointStrategy strategy = const Dijkstra(),
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
-  }) => strategy.find(graph, from, to, zero: zero, add: add, compare: compare);
+    WeightAlgebra<E>? algebra,
+  }) => strategy.find(graph, from, to, algebra: resolveAlgebra<E>(algebra));
 }

@@ -1,41 +1,31 @@
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import '../path.dart';
 import '_utils.dart';
+import 'a_star.dart';
 import 'strategy.dart';
 
 /// Result of a Bellman-Ford shortest-path query.
 ///
 /// Three outcomes are possible:
-/// * **Success** — [path] contains the shortest path and [hasNegativeCycle]
-///   is `false`.
+/// * **Success** — [path] contains the shortest path.
 /// * **No path** — [path] is `null` and [hasNegativeCycle] is `false`.
 /// * **Negative cycle** — [path] is `null` and [hasNegativeCycle] is `true`.
-///
-/// Use [isSuccess] to quickly check for a valid path.
-class BellmanFordResult {
-  /// The shortest path, or `null` when no path exists or a negative cycle
-  /// was detected.
-  final Path? path;
-
-  /// `true` when a negative-weight cycle reachable from the source was
-  /// detected.  In this case [path] is `null` and distances are undefined.
+class BellmanFordResult<E> {
+  final Path<E>? path;
   final bool hasNegativeCycle;
 
   const BellmanFordResult._({this.path, required this.hasNegativeCycle});
 
-  /// Successful query with a valid [path].
-  factory BellmanFordResult.success(Path path) =>
+  factory BellmanFordResult.success(Path<E> path) =>
       BellmanFordResult._(path: path, hasNegativeCycle: false);
 
-  /// No path exists between the source and target.
   factory BellmanFordResult.noPath() =>
-      const BellmanFordResult._(hasNegativeCycle: false);
+      BellmanFordResult._(path: null, hasNegativeCycle: false);
 
-  /// A negative cycle was detected; shortest paths are undefined.
   factory BellmanFordResult.negativeCycle() =>
-      const BellmanFordResult._(hasNegativeCycle: true);
+      BellmanFordResult._(path: null, hasNegativeCycle: true);
 
-  /// `true` when a valid path was found.
   bool get isSuccess => path != null;
 
   @override
@@ -48,8 +38,8 @@ class BellmanFordResult {
 
 /// Bellman-Ford algorithm for single-source shortest paths.
 ///
-/// Unlike Dijkstra, Bellman-Ford supports negative edge weights and can
-/// detect negative cycles.  It runs in O(V × E) time.
+/// Unlike Dijkstra, supports negative edge weights and detects negative cycles.
+/// Works with any edge type [E] through [WeightAlgebra<E>].
 ///
 /// ```dart
 /// final result = BellmanFord.shortestPath(graph, 0, 3);
@@ -62,79 +52,59 @@ class BellmanFordResult {
 class BellmanFord implements PointToPointStrategy {
   const BellmanFord();
 
-  /// Strategy-compatible entry point.
-  ///
-  /// Throws [StateError] when a negative cycle is detected.
+  /// Strategy-compatible entry point. Throws [StateError] on negative cycle.
   @override
-  Path? find<N, E>(
+  Path<E>? find<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    final result = shortestPath(
-      graph,
-      from,
-      to,
-      zero: zero,
-      add: add,
-      compare: compare,
-    );
+    final result = shortestPath(graph, from, to, algebra: algebra);
     if (result.hasNegativeCycle) {
       throw StateError(
-        'Negative cycle detected in graph. '
-        'Use BellmanFord.shortestPath() to handle this case explicitly.',
+        'Negative cycle detected. Use BellmanFord.shortestPath() to handle explicitly.',
       );
     }
     return result.path;
   }
 
-  /// Finds the shortest path from [from] to [to] using Bellman-Ford.
-  ///
-  /// Returns a [BellmanFordResult] that distinguishes between success,
-  /// no-path, and negative-cycle outcomes.
+  /// Finds the shortest path from [from] to [to].
   ///
   /// **Time complexity:** O(V × E)
-  static BellmanFordResult shortestPath<N, E>(
+  static BellmanFordResult<E> shortestPath<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (!graph.hasNode(from) || !graph.hasNode(to)) {
       return BellmanFordResult.noPath();
     }
+    final alg = resolveAlgebra<E>(algebra);
     if (from == to) {
-      return BellmanFordResult.success(Path([from], zero));
+      return BellmanFordResult.success(Path([from], alg.zero));
     }
 
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
-
     final nodes = graph.nodeIds.toList();
-    final nodeCount = nodes.length;
-
-    final distances = <int, double>{from: zero};
+    final distances = <int, double>{from: alg.toDouble(alg.zero)};
+    final distTyped = <int, E>{from: alg.zero};
     final predecessors = <int, int>{};
 
-    // V-1 relaxation passes with early termination.
-    for (var i = 0; i < nodeCount - 1; i++) {
+    for (var i = 0; i < nodes.length - 1; i++) {
       var changed = false;
       for (final u in nodes) {
         final distU = distances[u];
-        if (distU == null) continue;
-
+        final typedU = distTyped[u];
+        if (distU == null || typedU == null) continue;
         for (final v in graph.successors(u)) {
-          final weight = graph.edgeWeight(u, v);
-          final newDist = addFn(distU, weight);
-          final currentDist = distances[v];
-
-          if (currentDist == null || compareFn(newDist, currentDist) < 0) {
+          final raw = edgeValue(graph, u, v, alg);
+          final newTyped = alg.add(typedU, raw);
+          final newDist = alg.toDouble(newTyped);
+          final cur = distances[v];
+          if (cur == null || newDist < cur) {
             distances[v] = newDist;
+            distTyped[v] = newTyped;
             predecessors[v] = u;
             changed = true;
           }
@@ -143,140 +113,110 @@ class BellmanFord implements PointToPointStrategy {
       if (!changed) break;
     }
 
-    // One more pass to detect negative cycles.
+    // Negative cycle detection pass.
     for (final u in nodes) {
       final distU = distances[u];
-      if (distU == null) continue;
-
+      final typedU = distTyped[u];
+      if (distU == null || typedU == null) continue;
       for (final v in graph.successors(u)) {
-        final weight = graph.edgeWeight(u, v);
-        final newDist = addFn(distU, weight);
-        final currentDist = distances[v];
-
-        if (currentDist == null || compareFn(newDist, currentDist) < 0) {
+        final raw = edgeValue(graph, u, v, alg);
+        final newTyped = alg.add(typedU, raw);
+        final curTyped = distTyped[v];
+        if (curTyped == null || alg.compare(newTyped, curTyped) < 0) {
           return BellmanFordResult.negativeCycle();
         }
       }
     }
 
-    final targetDist = distances[to];
-    if (targetDist == null) {
-      return BellmanFordResult.noPath();
-    }
-
+    final targetTyped = distTyped[to];
+    if (targetTyped == null) return BellmanFordResult.noPath();
     return BellmanFordResult.success(
-      Path(reconstructPath(predecessors, to), targetDist),
+      Path(reconstructPath(predecessors, to), targetTyped),
     );
   }
 
-  /// Computes single-source shortest distances from [from] to every
-  /// reachable node.
-  ///
-  /// Returns a map of node IDs to their shortest distance.  The map
-  /// contains an entry for [from] (distance [zero]) and every reachable
-  /// node.
-  ///
-  /// **Important:** If the graph contains a negative cycle reachable from
-  /// [from], the returned distances are undefined.  Call
-  /// [hasNegativeCycle] first if you need to guarantee correctness.
+  /// Single-source distances from [from] to all reachable nodes.
   ///
   /// **Time complexity:** O(V × E)
-  static Map<int, double> singleSourceDistances<N, E>(
+  static Map<int, E> singleSourceDistances<N, E>(
     WeightedWalkable<N, E> graph,
     int from, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (!graph.hasNode(from)) return {};
-
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = resolveAlgebra<E>(algebra);
 
     final nodes = graph.nodeIds.toList();
-    final nodeCount = nodes.length;
+    final distances = <int, double>{from: alg.toDouble(alg.zero)};
+    final distTyped = <int, E>{from: alg.zero};
 
-    final distances = <int, double>{from: zero};
-
-    // V-1 relaxation passes with early termination.
-    for (var i = 0; i < nodeCount - 1; i++) {
+    for (var i = 0; i < nodes.length - 1; i++) {
       var changed = false;
       for (final u in nodes) {
         final distU = distances[u];
-        if (distU == null) continue;
-
+        final typedU = distTyped[u];
+        if (distU == null || typedU == null) continue;
         for (final v in graph.successors(u)) {
-          final weight = graph.edgeWeight(u, v);
-          final newDist = addFn(distU, weight);
-          final currentDist = distances[v];
-
-          if (currentDist == null || compareFn(newDist, currentDist) < 0) {
+          final raw = edgeValue(graph, u, v, alg);
+          final newTyped = alg.add(typedU, raw);
+          final newDist = alg.toDouble(newTyped);
+          final cur = distances[v];
+          if (cur == null || newDist < cur) {
             distances[v] = newDist;
+            distTyped[v] = newTyped;
             changed = true;
           }
         }
       }
       if (!changed) break;
     }
-
-    return distances;
+    return distTyped;
   }
 
-  /// Returns `true` when a negative-weight cycle reachable from [from]
-  /// exists in the graph.
+  /// Returns `true` when a negative-weight cycle reachable from [from] exists.
   ///
   /// **Time complexity:** O(V × E)
   static bool hasNegativeCycle<N, E>(
     WeightedWalkable<N, E> graph,
     int from, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (!graph.hasNode(from)) return false;
-
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
-
+    final alg = resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
-    final nodeCount = nodes.length;
+    final distances = <int, double>{from: alg.toDouble(alg.zero)};
+    final distTyped = <int, E>{from: alg.zero};
 
-    final distances = <int, double>{from: zero};
-
-    // V-1 relaxation passes.
-    for (var i = 0; i < nodeCount - 1; i++) {
+    for (var i = 0; i < nodes.length - 1; i++) {
       for (final u in nodes) {
         final distU = distances[u];
-        if (distU == null) continue;
-
+        final typedU = distTyped[u];
+        if (distU == null || typedU == null) continue;
         for (final v in graph.successors(u)) {
-          final weight = graph.edgeWeight(u, v);
-          final newDist = addFn(distU, weight);
-          final currentDist = distances[v];
-
-          if (currentDist == null || compareFn(newDist, currentDist) < 0) {
+          final raw = edgeValue(graph, u, v, alg);
+          final newTyped = alg.add(typedU, raw);
+          final newDist = alg.toDouble(newTyped);
+          final cur = distances[v];
+          if (cur == null || newDist < cur) {
             distances[v] = newDist;
+            distTyped[v] = newTyped;
           }
         }
       }
     }
-
-    // One more pass — any improvement means negative cycle.
     for (final u in nodes) {
       final distU = distances[u];
-      if (distU == null) continue;
-
+      final typedU = distTyped[u];
+      if (distU == null || typedU == null) continue;
       for (final v in graph.successors(u)) {
-        final weight = graph.edgeWeight(u, v);
-        final newDist = addFn(distU, weight);
-        final currentDist = distances[v];
-
-        if (currentDist == null || compareFn(newDist, currentDist) < 0) {
+        final raw = edgeValue(graph, u, v, alg);
+        final newTyped = alg.add(typedU, raw);
+        final curTyped = distTyped[v];
+        if (curTyped == null || alg.compare(newTyped, curTyped) < 0) {
           return true;
         }
       }
     }
-
     return false;
   }
 }

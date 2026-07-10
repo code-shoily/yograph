@@ -1,4 +1,4 @@
-import '../simple_graph.dart';
+import '../model/mutable.dart';
 
 /// Represents the result of a maximum flow computation.
 class MaxFlowResult<N> {
@@ -6,7 +6,7 @@ class MaxFlowResult<N> {
   final double maxFlow;
 
   /// The residual graph after flow computation.
-  final SimpleGraph<N, double> residualGraph;
+  final Mutable<N, double> residualGraph;
 
   /// The source node ID.
   final int source;

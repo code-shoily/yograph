@@ -95,10 +95,11 @@ class SimpleGraph<N, E>
 
   @override
   double edgeWeight(int from, int to) {
-    if (!hasEdge(from, to)) {
+    final fromMap = _out[from];
+    if (fromMap == null || !fromMap.containsKey(to)) {
       throw StateError('No edge from $from to $to');
     }
-    final data = edgeData(from, to);
+    final data = fromMap[to];
     if (data is num) {
       return data.toDouble();
     }
@@ -131,64 +132,89 @@ class SimpleGraph<N, E>
 
   @override
   void addEdge(int from, int to, {E? data}) {
-    // Auto-create missing endpoint nodes.
-    if (!_nodes.containsKey(from)) {
-      addNode(from);
-    }
-    if (!_nodes.containsKey(to)) {
-      addNode(to);
-    }
+    final outFrom = _out.putIfAbsent(from, () {
+      _nodes[from] = null;
+      _in[from] = {};
+      return <int, E?>{};
+    });
+    final outTo = _out.putIfAbsent(to, () {
+      _nodes[to] = null;
+      _in[to] = {};
+      return <int, E?>{};
+    });
 
-    final bool existed = _out[from]!.containsKey(to);
+    final bool existed = outFrom.containsKey(to);
     if (!existed) {
       _edgeCount++;
     }
 
-    _out[from]![to] = data;
+    outFrom[to] = data;
     _in[to]![from] = data;
 
     if (kind == GraphKind.undirected && from != to) {
-      _out[to]![from] = data;
+      outTo[from] = data;
       _in[from]![to] = data;
     }
   }
 
   @override
   void removeNode(int id) {
-    if (!hasNode(id)) {
+    if (!_nodes.containsKey(id)) {
       throw ArgumentError.value(id, 'id', 'Node does not exist');
     }
-
-    // Remove all outgoing edges first.
-    final outNeighbors = List<int>.from(_out[id]!.keys);
-    for (final to in outNeighbors) {
-      removeEdge(id, to);
-    }
-
-    // Remove all incoming edges.
-    final inNeighbors = List<int>.from(_in[id]!.keys);
-    for (final from in inNeighbors) {
-      removeEdge(from, id);
-    }
-
     _nodes.remove(id);
-    _out.remove(id);
-    _in.remove(id);
+
+    final outMap = _out.remove(id);
+    final inMap = _in.remove(id);
+
+    if (kind == GraphKind.undirected) {
+      if (outMap != null) {
+        for (final to in outMap.keys) {
+          if (to != id) {
+            _out[to]?.remove(id);
+            _in[to]?.remove(id);
+          }
+        }
+        _edgeCount -= outMap.length;
+      }
+    } else {
+      int removedEdges = 0;
+      if (outMap != null) {
+        for (final to in outMap.keys) {
+          if (to != id) {
+            _in[to]?.remove(id);
+            removedEdges++;
+          } else {
+            removedEdges++;
+          }
+        }
+      }
+      if (inMap != null) {
+        for (final from in inMap.keys) {
+          if (from != id) {
+            _out[from]?.remove(id);
+            removedEdges++;
+          }
+        }
+      }
+      _edgeCount -= removedEdges;
+    }
   }
 
   @override
   void removeEdge(int from, int to) {
-    if (_out[from]?.containsKey(to) != true) {
+    final fromMap = _out[from];
+    if (fromMap == null || !fromMap.containsKey(to)) {
       return; // idempotent
     }
 
-    _out[from]!.remove(to);
-    _in[to]!.remove(from);
+    fromMap.remove(to);
+    _in[to]?.remove(from);
     _edgeCount--;
 
     if (kind == GraphKind.undirected && from != to) {
-      _out[to]!.remove(from);
-      _in[from]!.remove(to);
+      _out[to]?.remove(from);
+      _in[from]?.remove(to);
     }
   }
 
@@ -199,7 +225,11 @@ class SimpleGraph<N, E>
   /// Total number of edges in the graph.
   ///
   /// For undirected graphs each unordered pair is counted once.
+  @override
   int get edgeCount => _edgeCount;
+
+  @override
+  bool get isNotEmpty => _nodes.isNotEmpty;
 
   /// Neighbors of [id] — for undirected graphs this is identical to
   /// [successors]; for directed graphs it is also identical (only outgoing

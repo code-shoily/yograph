@@ -89,7 +89,12 @@ abstract final class LabelPropagation {
     return candidates.first;
   }
 
-  static int _hash(int label, int seed) => Object.hash(label, seed);
+  static int _hash(int label, int seed) {
+    var h = label ^ seed;
+    h = (h ^ (h >> 16)) * 0x85ebca6b;
+    h = (h ^ (h >> 13)) * 0xc2b2ae35;
+    return h ^ (h >> 16);
+  }
 
   static CommunityResult _normalize(Map<int, int> labels) {
     final unique = labels.values.toSet().toList()..sort();

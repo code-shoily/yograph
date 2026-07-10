@@ -25,6 +25,12 @@ abstract interface class Traversable {
   /// Number of nodes in the graph.
   int get nodeCount;
 
+  /// Number of edges in the graph.
+  int get edgeCount;
+
   /// `true` when the graph contains no nodes.
   bool get isEmpty;
+
+  /// `true` when the graph contains at least one node.
+  bool get isNotEmpty => !isEmpty;
 }

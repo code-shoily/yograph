@@ -1,5 +1,5 @@
 import '../model/roles.dart';
-import 'strategy.dart';
+import '../model/weight_algebra.dart';
 
 /// Result of a Floyd-Warshall all-pairs shortest-path query.
 ///
@@ -63,12 +63,10 @@ class FloydWarshall {
   /// **Space complexity:** O(V²)
   static FloydWarshallResult allPairs<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = _resolveAlgebra<E>(algebra);
+    final zero = alg.toDouble(alg.zero);
 
     final nodes = graph.nodeIds.toList();
     final dist = <(int, int), double>{};
@@ -81,10 +79,11 @@ class FloydWarshall {
     // Initialize: dist[i][j] = weight(i, j)
     for (final i in nodes) {
       for (final j in graph.successors(i)) {
-        final w = graph.edgeWeight(i, j);
+        final rawEdge = edgeValue(graph, i, j, alg);
+        final w = alg.toDouble(rawEdge);
         final key = (i, j);
         final existing = dist[key];
-        if (existing == null || compareFn(w, existing) < 0) {
+        if (existing == null || w < existing) {
           dist[key] = w;
         }
       }
@@ -100,11 +99,11 @@ class FloydWarshall {
           final distKJ = dist[(k, j)];
           if (distKJ == null) continue;
 
-          final newDist = addFn(distIK, distKJ);
+          final newDist = distIK + distKJ;
           final key = (i, j);
           final current = dist[key];
 
-          if (current == null || compareFn(newDist, current) < 0) {
+          if (current == null || newDist < current) {
             dist[key] = newDist;
           }
         }
@@ -114,7 +113,7 @@ class FloydWarshall {
     // Negative cycle detection: any dist[i][i] < zero
     for (final i in nodes) {
       final d = dist[(i, i)];
-      if (d != null && compareFn(d, zero) < 0) {
+      if (d != null && d < zero) {
         return FloydWarshallResult.negativeCycle();
       }
     }
@@ -131,12 +130,10 @@ class FloydWarshall {
   /// early exit.
   static bool hasNegativeCycle<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = _resolveAlgebra<E>(algebra);
+    final zero = alg.toDouble(alg.zero);
 
     final nodes = graph.nodeIds.toList();
     final dist = <(int, int), double>{};
@@ -147,10 +144,11 @@ class FloydWarshall {
 
     for (final i in nodes) {
       for (final j in graph.successors(i)) {
-        final w = graph.edgeWeight(i, j);
+        final rawEdge = edgeValue(graph, i, j, alg);
+        final w = alg.toDouble(rawEdge);
         final key = (i, j);
         final existing = dist[key];
-        if (existing == null || compareFn(w, existing) < 0) {
+        if (existing == null || w < existing) {
           dist[key] = w;
         }
       }
@@ -165,11 +163,11 @@ class FloydWarshall {
           final distKJ = dist[(k, j)];
           if (distKJ == null) continue;
 
-          final newDist = addFn(distIK, distKJ);
+          final newDist = distIK + distKJ;
           final key = (i, j);
           final current = dist[key];
 
-          if (current == null || compareFn(newDist, current) < 0) {
+          if (current == null || newDist < current) {
             dist[key] = newDist;
           }
         }
@@ -178,7 +176,7 @@ class FloydWarshall {
       // Early-exit check after each k iteration.
       for (final i in nodes) {
         final d = dist[(i, i)];
-        if (d != null && compareFn(d, zero) < 0) {
+        if (d != null && d < zero) {
           return true;
         }
       }
@@ -186,4 +184,17 @@ class FloydWarshall {
 
     return false;
   }
+}
+
+WeightAlgebra<E> _resolveAlgebra<E>(WeightAlgebra<E>? algebra) {
+  if (algebra != null) return algebra;
+  if (E == double || E == dynamic || E == Null || E.toString() == 'void') {
+    return DoubleAlgebra.instance as WeightAlgebra<E>;
+  }
+  if (E == int) {
+    return IntAlgebra.instance as WeightAlgebra<E>;
+  }
+  throw ArgumentError(
+    'A WeightAlgebra<$E> must be supplied for non-double edge types.',
+  );
 }

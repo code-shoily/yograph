@@ -1,4 +1,5 @@
 import '../model/graph_kind.dart';
+import '../model/mutable.dart';
 import '../model/roles.dart';
 import '../property/cyclicity.dart';
 import '../simple_graph.dart';
@@ -79,25 +80,31 @@ abstract final class Transform {
 
   /// Computes the transitive reduction of a DAG.
   ///
-  /// Returns a new [SimpleGraph] containing only the edges of [graph] that are
+  /// Returns a new graph containing only the edges of [graph] that are
   /// not implied by other paths.  Returns `null` when [graph] is not a DAG or
   /// is undirected.
   ///
+  /// By default the result is a [SimpleGraph].  Pass [createGraph] to use a
+  /// custom mutable graph backend instead.
+  ///
   /// **Time complexity:** `O(V × E)`
-  static SimpleGraph<N, E>? transitiveReduction<N, E>(
-    Bidirectional<N, E> graph,
-  ) {
+  static Mutable<N, E>? transitiveReduction<N, E>(
+    Bidirectional<N, E> graph, {
+    GraphCreator<N, E>? createGraph,
+  }) {
     if (graph.kind != GraphKind.directed || !Cyclicity.isAcyclic(graph)) {
       return null;
     }
 
     final nodes = graph.nodeIds.toList();
+    final creator = createGraph ?? (_) => SimpleGraph<N, E>.directed();
+
     if (nodes.isEmpty) {
-      return SimpleGraph<N, E>.directed();
+      return creator(GraphKind.directed);
     }
 
     final closure = _transitiveClosureDag(graph);
-    final reduced = SimpleGraph<N, E>.directed();
+    final reduced = creator(GraphKind.directed);
 
     // Copy all nodes with their data.
     for (final u in nodes) {

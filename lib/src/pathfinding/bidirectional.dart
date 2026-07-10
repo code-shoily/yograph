@@ -3,6 +3,7 @@ import 'dart:collection';
 import '../internal/priority_queue.dart';
 import '../model/graph_kind.dart';
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import '../path.dart';
 import '_utils.dart';
 import 'dijkstra.dart';
@@ -18,81 +19,72 @@ import 'strategy.dart';
 /// so that the backward search can follow incoming edges.  If it does not,
 /// the implementation transparently falls back to regular [Dijkstra].
 ///
+/// **Requirements:**
+/// - All edge weights must be non-negative. If the graph contains negative edge
+///   weights, the algorithm is not guaranteed to produce correct results.
+///
 /// **Time complexity:** O((V + E) log V) worst case, but typically much
 /// faster than unidirectional Dijkstra for single-pair queries.
 class BidirectionalDijkstra implements PointToPointStrategy {
   const BidirectionalDijkstra();
 
   @override
-  Path? find<N, E>(
+  Path<E>? find<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    return shortestPath(
-      graph,
-      from,
-      to,
-      zero: zero,
-      add: add,
-      compare: compare,
-    );
+    return shortestPath(graph, from, to, algebra: algebra);
   }
 
   /// Finds the shortest path from [from] to [to] using bidirectional Dijkstra.
   ///
   /// Returns `null` when [from] or [to] does not exist, or when no path
   /// connects them.
-  static Path? shortestPath<N, E>(
+  static Path<E>? shortestPath<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = _resolveAlgebra(algebra);
+
     if (!graph.hasNode(from) || !graph.hasNode(to)) return null;
-    if (from == to) return Path([from], zero);
+    if (from == to) return Path([from], alg.zero);
 
     if (graph is! Bidirectional<N, E>) {
-      return Dijkstra.shortestPath(
-        graph,
-        from,
-        to,
-        zero: zero,
-        add: add,
-        compare: compare,
-      );
+      return Dijkstra.shortestPath(graph, from, to, algebra: alg);
     }
 
     final bidirectional = graph as Bidirectional<N, E>;
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
 
     final pqF = PriorityQueue<(double dist, int node)>(
-      (a, b) => compareFn(a.$1, b.$1),
+      (a, b) => a.$1.compareTo(b.$1),
     );
     final pqB = PriorityQueue<(double dist, int node)>(
-      (a, b) => compareFn(a.$1, b.$1),
+      (a, b) => a.$1.compareTo(b.$1),
     );
 
-    pqF.push((zero, from));
-    pqB.push((zero, to));
+    final zeroD = alg.toDouble(alg.zero);
+    pqF.push((zeroD, from));
+    pqB.push((zeroD, to));
 
-    final distF = <int, double>{from: zero};
-    final distB = <int, double>{to: zero};
+    final distF = <int, double>{from: zeroD};
+    final distB = <int, double>{to: zeroD};
+    final distFTyped = <int, E>{from: alg.zero};
+    final distBTyped = <int, E>{to: alg.zero};
     final predF = <int, int>{};
     final nextB = <int, int>{}; // next node towards the target
 
     double? bestMu;
+    E? bestMuTyped;
     int? bestMeetingNode;
 
-    void consider(double total, int meetingNode) {
-      if (bestMu == null || compareFn(total, bestMu!) < 0) {
+    void consider(double total, E totalTyped, int meetingNode) {
+      if (bestMu == null || total < bestMu!) {
         bestMu = total;
+        bestMuTyped = totalTyped;
         bestMeetingNode = meetingNode;
       }
     }
@@ -102,9 +94,6 @@ class BidirectionalDijkstra implements PointToPointStrategy {
         ? bidirectional.successors(node)
         : bidirectional.predecessors(node);
 
-    double backwardWeight(int fromNode, int toNode) =>
-        bidirectional.edgeWeight(fromNode, toNode);
-
     while (pqF.isNotEmpty || pqB.isNotEmpty) {
       // Termination: no unsettled frontier crossing can improve on bestMu.
       if (bestMu != null) {
@@ -112,7 +101,7 @@ class BidirectionalDijkstra implements PointToPointStrategy {
         final topB = pqB.peek;
         final canStop = switch ((topF, topB)) {
           (null, _) || (_, null) => true,
-          _ => compareFn(addFn(topF!.$1, topB!.$1), bestMu!) >= 0,
+          _ => topF!.$1 + topB!.$1 >= bestMu!,
         };
         if (canStop) break;
       }
@@ -121,7 +110,7 @@ class BidirectionalDijkstra implements PointToPointStrategy {
       final topF = pqF.peek;
       final topB = pqB.peek;
       final expandForward =
-          topB == null || (topF != null && compareFn(topF.$1, topB.$1) <= 0);
+          topB == null || (topF != null && topF.$1 <= topB.$1);
 
       if (expandForward) {
         _expandForward(
@@ -129,9 +118,10 @@ class BidirectionalDijkstra implements PointToPointStrategy {
           pqF,
           distF,
           distB,
+          distFTyped,
+          distBTyped,
           predF,
-          addFn,
-          compareFn,
+          alg,
           consider,
         );
       } else {
@@ -140,21 +130,23 @@ class BidirectionalDijkstra implements PointToPointStrategy {
           pqB,
           distB,
           distF,
+          distBTyped,
+          distFTyped,
           nextB,
           backwardNeighbors,
-          backwardWeight,
-          addFn,
-          compareFn,
+          alg,
           consider,
         );
       }
     }
 
-    if (bestMu == null || bestMeetingNode == null) return null;
+    if (bestMu == null || bestMuTyped == null || bestMeetingNode == null) {
+      return null;
+    }
 
     return Path(
       _reconstructBidirectionalPath(predF, nextB, bestMeetingNode!),
-      bestMu!,
+      bestMuTyped as E,
     );
   }
 
@@ -163,33 +155,54 @@ class BidirectionalDijkstra implements PointToPointStrategy {
     PriorityQueue<(double dist, int node)> pq,
     Map<int, double> dist,
     Map<int, double> distOther,
+    Map<int, E> distTyped,
+    Map<int, E> distOtherTyped,
     Map<int, int> pred,
-    double Function(double, double) add,
-    int Function(double, double) compare,
-    void Function(double total, int meetingNode) consider,
+    WeightAlgebra<E> alg,
+    void Function(double total, E totalTyped, int meetingNode) consider,
   ) {
     final (d, u) = pq.pop()!;
 
     final bestU = dist[u];
-    if (bestU == null || compare(d, bestU) > 0) return;
+    if (bestU == null || d > bestU) return;
+
+    final typedU = distTyped[u];
+    if (typedU == null) return;
 
     if (distOther.containsKey(u)) {
-      consider(add(d, distOther[u]!), u);
+      final otherTypedU = distOtherTyped[u];
+      final otherDistU = distOther[u];
+      if (otherTypedU != null && otherDistU != null) {
+        final combined = alg.add(typedU, otherTypedU);
+        consider(d + otherDistU, combined, u);
+      }
     }
 
     for (final v in graph.successors(u)) {
-      final w = graph.edgeWeight(u, v);
-      final newDist = add(d, w);
+      final raw = edgeValue(graph, u, v, alg);
+      final newTyped = alg.add(typedU, raw);
+      final newDist = alg.toDouble(newTyped);
 
       final existing = dist[v];
-      if (existing == null || compare(newDist, existing) < 0) {
+      if (existing == null || newDist < existing) {
         dist[v] = newDist;
+        distTyped[v] = newTyped;
         pred[v] = u;
         pq.push((newDist, v));
       }
 
       if (distOther.containsKey(v)) {
-        consider(add(newDist, distOther[v]!), v);
+        final vTyped = distTyped[v];
+        final otherTypedV = distOtherTyped[v];
+        final distV = dist[v];
+        final otherDistV = distOther[v];
+        if (vTyped != null &&
+            otherTypedV != null &&
+            distV != null &&
+            otherDistV != null) {
+          final combined = alg.add(vTyped, otherTypedV);
+          consider(distV + otherDistV, combined, v);
+        }
       }
     }
   }
@@ -199,35 +212,55 @@ class BidirectionalDijkstra implements PointToPointStrategy {
     PriorityQueue<(double dist, int node)> pq,
     Map<int, double> dist,
     Map<int, double> distOther,
+    Map<int, E> distTyped,
+    Map<int, E> distOtherTyped,
     Map<int, int> nextB,
     Iterable<int> Function(int) neighbors,
-    double Function(int, int) edgeWeight,
-    double Function(double, double) add,
-    int Function(double, double) compare,
-    void Function(double total, int meetingNode) consider,
+    WeightAlgebra<E> alg,
+    void Function(double total, E totalTyped, int meetingNode) consider,
   ) {
     final (d, u) = pq.pop()!;
 
     final bestU = dist[u];
-    if (bestU == null || compare(d, bestU) > 0) return;
+    if (bestU == null || d > bestU) return;
+
+    final typedU = distTyped[u];
+    if (typedU == null) return;
 
     if (distOther.containsKey(u)) {
-      consider(add(d, distOther[u]!), u);
+      final otherTypedU = distOtherTyped[u];
+      final otherDistU = distOther[u];
+      if (otherTypedU != null && otherDistU != null) {
+        final combined = alg.add(otherTypedU, typedU);
+        consider(otherDistU + d, combined, u);
+      }
     }
 
     for (final v in neighbors(u)) {
-      final w = edgeWeight(v, u);
-      final newDist = add(d, w);
+      final raw = edgeValue(graph, v, u, alg);
+      final newTyped = alg.add(typedU, raw);
+      final newDist = alg.toDouble(newTyped);
 
       final existing = dist[v];
-      if (existing == null || compare(newDist, existing) < 0) {
+      if (existing == null || newDist < existing) {
         dist[v] = newDist;
+        distTyped[v] = newTyped;
         nextB[v] = u; // from v, go to u next on the way to the target
         pq.push((newDist, v));
       }
 
       if (distOther.containsKey(v)) {
-        consider(add(newDist, distOther[v]!), v);
+        final vTyped = distTyped[v];
+        final otherTypedV = distOtherTyped[v];
+        final distV = dist[v];
+        final otherDistV = distOther[v];
+        if (vTyped != null &&
+            otherTypedV != null &&
+            distV != null &&
+            otherDistV != null) {
+          final combined = alg.add(otherTypedV, vTyped);
+          consider(otherDistV + distV, combined, v);
+        }
       }
     }
   }
@@ -259,7 +292,11 @@ class BidirectionalDijkstra implements PointToPointStrategy {
 /// **Time complexity:** O(V + E)
 abstract final class BidirectionalBfs {
   /// Finds a shortest (fewest-edge) path from [from] to [to].
-  static Path? shortestPath<N, E>(Walkable<N, E> graph, int from, int to) {
+  static Path<double>? shortestPath<N, E>(
+    Walkable<N, E> graph,
+    int from,
+    int to,
+  ) {
     if (!graph.hasNode(from) || !graph.hasNode(to)) return null;
     if (from == to) return Path([from], 0.0);
 
@@ -267,7 +304,7 @@ abstract final class BidirectionalBfs {
       return _unidirectionalBfs(graph, from, to);
     }
 
-    final bidirectional = graph as Bidirectional<N, E>;
+    final bidirectional = graph;
     final queueF = Queue<int>()..add(from);
     final queueB = Queue<int>()..add(to);
     final predF = <int, int>{};
@@ -357,7 +394,7 @@ abstract final class BidirectionalBfs {
     return [...forward.reversed, ...backward];
   }
 
-  static Path? _unidirectionalBfs<N, E>(
+  static Path<double>? _unidirectionalBfs<N, E>(
     Walkable<N, E> graph,
     int from,
     int to,
@@ -383,4 +420,19 @@ abstract final class BidirectionalBfs {
 
     return null;
   }
+}
+
+/// Resolves an optional [WeightAlgebra<E>] falling back to [DoubleAlgebra]
+/// when [E] is `double` and none is provided.
+WeightAlgebra<E> _resolveAlgebra<E>(WeightAlgebra<E>? algebra) {
+  if (algebra != null) return algebra;
+  if (E == double || E == dynamic || E == Null || E.toString() == 'void') {
+    return DoubleAlgebra.instance as WeightAlgebra<E>;
+  }
+  if (E == int) {
+    return IntAlgebra.instance as WeightAlgebra<E>;
+  }
+  throw ArgumentError(
+    'A WeightAlgebra<$E> must be supplied for non-double edge types.',
+  );
 }

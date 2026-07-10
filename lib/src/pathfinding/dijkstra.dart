@@ -1,145 +1,163 @@
 import '../internal/priority_queue.dart';
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import '../path.dart';
+import '_utils.dart';
 import 'a_star.dart';
 import 'strategy.dart';
 
 /// Dijkstra's algorithm for single-source shortest paths.
 ///
-/// Dijkstra finds the shortest path from a source node to all other
-/// reachable nodes in a graph with non-negative edge weights.
+/// Works with any edge type [E] via [WeightAlgebra<E>].
+/// Defaults to [DoubleAlgebra] when [E] is `double`, preserving the
+/// existing API without any code changes at call sites.
+///
+/// **Requirements:**
+/// - All edge weights must be non-negative. If the graph contains negative edge
+///   weights, the algorithm may produce incorrect results because it assumes that
+///   a node's shortest path distance is finalized when it is popped from the priority queue.
+///   For graphs with negative edge weights, use [BellmanFord] or [FloydWarshall].
 ///
 /// ```dart
+/// // Unchanged existing usage:
 /// final path = Dijkstra.shortestPath(graph, 0, 5);
 /// final dists = Dijkstra.singleSourceDistances(graph, 0);
+///
+/// // Custom algebra:
+/// final path = Dijkstra.shortestPath(graph, 0, 5, algebra: RoadByKm.instance);
 /// ```
 class Dijkstra implements PointToPointStrategy {
   const Dijkstra();
 
   @override
-  Path? find<N, E>(
+  Path<E>? find<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
-    return shortestPath(
-      graph,
-      from,
-      to,
-      zero: zero,
-      add: add,
-      compare: compare,
-    );
+    return shortestPath(graph, from, to, algebra: algebra);
   }
 
   /// Finds the shortest path from [from] to [to].
   ///
-  /// Delegates to [AStar.aStar] with a zero heuristic, since Dijkstra is
-  /// mathematically equivalent to A* with `heuristic(_, _) == 0`.
-  ///
-  /// Returns `null` when [from] or [to] does not exist, or when no path
-  /// connects them.
+  /// Delegates to [AStar.aStar] with a zero heuristic.
   ///
   /// **Time complexity:** O((V + E) log V)
-  static Path? shortestPath<N, E>(
+  static Path<E>? shortestPath<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     return AStar.aStar(
       graph,
       from,
       to,
-      heuristic: (_, _) => zero,
-      zero: zero,
-      add: add,
-      compare: compare,
+      heuristic: (_, _) => 0.0,
+      algebra: algebra,
     );
   }
 
   /// Computes single-source shortest distances from [from] to every
   /// reachable node.
   ///
-  /// The returned map contains an entry for every node reachable from
-  /// [from], including [from] itself (with distance [zero]).
-  ///
-  /// Returns an empty map when [from] is not present in the graph.
+  /// Returns a `Map<int, E>` of typed distances.  Returns an empty map when
+  /// [from] is not in the graph.
   ///
   /// **Time complexity:** O((V + E) log V)
-  static Map<int, double> singleSourceDistances<N, E>(
+  static Map<int, E> singleSourceDistances<N, E>(
     WeightedWalkable<N, E> graph,
     int from, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (!graph.hasNode(from)) return {};
-
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = resolveAlgebra<E>(algebra);
 
     final pq = PriorityQueue<(double dist, int node)>(
-      (a, b) => compareFn(a.$1, b.$1),
+      (a, b) => a.$1.compareTo(b.$1),
     );
-    pq.push((zero, from));
+    pq.push((0.0, from));
 
-    final distances = <int, double>{from: zero};
+    final distances = <int, double>{from: 0.0};
+    final distTyped = <int, E>{from: alg.zero};
 
     while (pq.isNotEmpty) {
       final (dist, node) = pq.pop()!;
 
       final bestDist = distances[node];
-      if (bestDist == null || compareFn(dist, bestDist) > 0) continue;
+      if (bestDist == null || dist > bestDist) continue;
+
+      final typedDist = distTyped[node];
+      if (typedDist == null) continue;
 
       for (final succ in graph.successors(node)) {
-        final edgeCost = graph.edgeWeight(node, succ);
-        final newDist = addFn(dist, edgeCost);
+        final edgeRaw = edgeValue(graph, node, succ, alg);
+        final newTyped = alg.add(typedDist, edgeRaw);
+        final newDist = alg.toDouble(newTyped);
 
         final existingDist = distances[succ];
-        if (existingDist == null || compareFn(newDist, existingDist) < 0) {
+        if (existingDist == null || newDist < existingDist) {
           distances[succ] = newDist;
+          distTyped[succ] = newTyped;
           pq.push((newDist, succ));
         }
       }
     }
 
-    return distances;
+    return distTyped;
   }
 
   /// Finds the **widest path** (maximum-capacity path) from [from] to [to].
   ///
-  /// The width of a path is the minimum edge weight along it.  This
-  /// algorithm maximises that bottleneck.
-  ///
-  /// Returns `null` when [from] or [to] does not exist, or when no path
-  /// connects them.
+  /// The width of a path is the minimum edge weight along it.
   ///
   /// **Time complexity:** O((V + E) log V)
-  static Path? widestPath<N, E>(
+  static Path<E>? widestPath<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
-    int to,
-  ) {
-    return AStar.aStar(
-      graph,
-      from,
-      to,
-      heuristic: (_, _) => double.infinity,
-      zero: double.infinity,
-      add: (a, b) => a < b ? a : b,
-      compare: (a, b) => b.compareTo(a),
+    int to, {
+    WeightAlgebra<E>? algebra,
+  }) {
+    final alg = resolveAlgebra<E>(algebra);
+    if (!graph.hasNode(from) || !graph.hasNode(to)) return null;
+    if (from == to) return Path([from], alg.infinity);
+
+    final pq = PriorityQueue<(E width, int node)>(
+      (a, b) => alg.compare(b.$1, a.$1),
     );
+    pq.push((alg.infinity, from));
+
+    final widths = <int, E>{from: alg.infinity};
+    final predecessors = <int, int>{};
+
+    while (pq.isNotEmpty) {
+      final (width, node) = pq.pop()!;
+
+      final bestWidth = widths[node];
+      if (bestWidth == null || alg.compare(width, bestWidth) < 0) continue;
+
+      if (node == to) {
+        return Path(reconstructPath(predecessors, to), width);
+      }
+
+      for (final succ in graph.successors(node)) {
+        final edgeRaw = edgeValue(graph, node, succ, alg);
+        final candidate = alg.compare(width, edgeRaw) < 0 ? width : edgeRaw;
+        final existing = widths[succ];
+
+        if (existing == null || alg.compare(candidate, existing) > 0) {
+          widths[succ] = candidate;
+          predecessors[succ] = node;
+          pq.push((candidate, succ));
+        }
+      }
+    }
+
+    return null;
   }
 
   /// Runs Dijkstra on an implicit state space.
-  ///
-  /// Equivalent to [AStar.implicitAStar] with a zero heuristic.
   static (S state, double cost)? implicitDijkstra<S>({
     required S from,
     required Iterable<(S, double)> Function(S) successors,
@@ -161,8 +179,6 @@ class Dijkstra implements PointToPointStrategy {
   }
 
   /// Runs Dijkstra on an implicit state space with a custom deduplication key.
-  ///
-  /// Equivalent to [AStar.implicitAStarBy] with a zero heuristic.
   static (S state, double cost)? implicitDijkstraBy<S, K>({
     required S from,
     required Iterable<(S, double)> Function(S) successors,

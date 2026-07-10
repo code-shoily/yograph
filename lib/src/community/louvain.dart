@@ -10,6 +10,13 @@ import 'community_result.dart';
 /// A fast hierarchical algorithm that optimizes modularity. It alternates
 /// between local optimization (moving nodes to neighbor communities) and
 /// aggregation (communities become super-nodes) until no improvement.
+///
+/// **Graph Assumptions:**
+/// - This algorithm assumes and is designed for **undirected graphs**.
+/// - If a directed graph is passed, it will be treated as undirected. Specifically,
+///   all edges are treated as undirected, and the aggregation step collapses edges
+///   between communities symmetrically, returning an undirected representation of the
+///   aggregated graph.
 abstract final class Louvain {
   const Louvain._();
 

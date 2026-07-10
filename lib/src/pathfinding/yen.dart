@@ -1,9 +1,10 @@
 import '../internal/priority_queue.dart';
 import '../model/graph_kind.dart';
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
 import '../path.dart';
+import 'a_star.dart';
 import 'dijkstra.dart';
-import 'strategy.dart';
 
 /// Yen's algorithm for finding the [k] shortest loopless paths.
 ///
@@ -18,36 +19,26 @@ abstract final class Yen {
   /// Returns an empty list when [from] or [to] is missing or when no path
   /// exists.  If fewer than [k] distinct loopless paths exist, all of them
   /// are returned.
-  static List<Path> kShortestPaths<N, E>(
+  static List<Path<E>> kShortestPaths<N, E>(
     WeightedWalkable<N, E> graph,
     int from,
     int to,
     int k, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
     if (k <= 0) return [];
     if (!graph.hasNode(from) || !graph.hasNode(to)) return [];
 
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
+    final alg = resolveAlgebra<E>(algebra);
 
-    final first = Dijkstra.shortestPath(
-      graph,
-      from,
-      to,
-      zero: zero,
-      add: add,
-      compare: compare,
-    );
+    final first = Dijkstra.shortestPath(graph, from, to, algebra: alg);
     if (first == null) return [];
 
-    final result = <Path>[first];
+    final result = <Path<E>>[first];
     if (k == 1) return result;
 
-    final candidates = PriorityQueue<Path>((a, b) {
-      final cmp = compareFn(a.weight, b.weight);
+    final candidates = PriorityQueue<Path<E>>((a, b) {
+      final cmp = alg.compare(a.weight, b.weight);
       if (cmp != 0) return cmp;
       // Deterministic tie-break for equal-weight paths.
       return a.nodes.join(',').compareTo(b.nodes.join(','));
@@ -80,9 +71,7 @@ abstract final class Yen {
           filtered,
           spurNode,
           to,
-          zero: zero,
-          add: add,
-          compare: compare,
+          algebra: alg,
         );
 
         if (spurPath == null) continue;
@@ -91,14 +80,14 @@ abstract final class Yen {
         final key = _pathKey(totalNodes);
         if (resultKeys.contains(key) || candidateKeys.contains(key)) continue;
 
-        var rootWeight = zero;
+        var rootWeight = alg.zero;
         for (var e = 0; e < rootPath.length - 1; e++) {
-          rootWeight = addFn(
+          rootWeight = alg.add(
             rootWeight,
-            graph.edgeWeight(rootPath[e], rootPath[e + 1]),
+            edgeValue(graph, rootPath[e], rootPath[e + 1], alg),
           );
         }
-        final totalWeight = addFn(rootWeight, spurPath.weight);
+        final totalWeight = alg.add(rootWeight, spurPath.weight);
 
         final candidate = Path(totalNodes, totalWeight);
         candidates.push(candidate);
@@ -148,7 +137,19 @@ class _FilteredGraph<N, E> implements WeightedWalkable<N, E> {
   bool get isEmpty => nodeIds.isEmpty;
 
   @override
+  bool get isNotEmpty => nodeIds.isNotEmpty;
+
+  @override
   int get nodeCount => nodeIds.length;
+
+  @override
+  int get edgeCount {
+    var count = 0;
+    for (final u in nodeIds) {
+      count += successors(u).length;
+    }
+    return _graph.kind == GraphKind.undirected ? count ~/ 2 : count;
+  }
 
   @override
   bool hasNode(int id) => !_blockedNodes.contains(id) && _graph.hasNode(id);

@@ -156,7 +156,9 @@ void main() {
       ]);
       final originalClosure = Transform.transitiveClosure(g);
       final reduced = Transform.transitiveReduction(g)!;
-      final reducedClosure = Transform.transitiveClosure(reduced);
+      final reducedClosure = Transform.transitiveClosure(
+        reduced as Bidirectional,
+      );
 
       for (final u in g.nodeIds) {
         expect(reducedClosure[u], equals(originalClosure[u]));

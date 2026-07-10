@@ -23,12 +23,11 @@ abstract interface class Walkable<N, E>
 ///
 /// Same capabilities as [Walkable] — the distinction is semantic:
 /// implementations promise that [edgeWeight] returns meaningful values.
-abstract interface class WeightedWalkable<N, E>
-    implements Traversable, Queryable<N, E> {}
+abstract interface class WeightedWalkable<N, E> implements Walkable<N, E> {}
 
 /// Anything with both out-edges and in-edges indexed.
 ///
 /// Required by algorithms that need transpose, predecessor traversal, or
 /// in-degree information: betweenness centrality, Kosaraju SCC, k-core, etc.
 abstract interface class Bidirectional<N, E>
-    implements Traversable, Reversible<E>, Queryable<N, E> {}
+    implements Walkable<N, E>, Reversible<E> {}

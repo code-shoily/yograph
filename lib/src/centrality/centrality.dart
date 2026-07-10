@@ -17,8 +17,9 @@ import 'dart:math' as math;
 
 import '../model/graph_kind.dart';
 import '../model/roles.dart';
+import '../model/weight_algebra.dart';
+import '../pathfinding/a_star.dart';
 import '../pathfinding/dijkstra.dart';
-import '../pathfinding/strategy.dart';
 import 'brandes.dart';
 
 // ---------------------------------------------------------------------------
@@ -140,48 +141,40 @@ abstract final class Centrality {
   ///
   /// If *s* cannot reach any other node the score is `0.0`.
   ///
-  /// Custom semirings may be supplied via [zero], [add] and [compare];
-  /// defaults are standard `double` addition and ordering.
+  /// Custom edge-weight semantics may be supplied via [algebra].
   ///
   /// Time complexity: **O(n · (E log V))** (one Dijkstra per source).
   static Map<int, double> closeness<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
     final n = nodes.length;
     if (n <= 1) return {for (final v in nodes) v: 0.0};
 
-    final addFn = add ?? defaultAdd;
-    final compareFn = compare ?? defaultCompare;
     final scores = <int, double>{};
+    final zero = alg.zero;
 
     for (final s in nodes) {
-      final distances = Dijkstra.singleSourceDistances(
-        graph,
-        s,
-        zero: zero,
-        add: add,
-        compare: compare,
-      );
+      final distances = Dijkstra.singleSourceDistances(graph, s, algebra: alg);
 
       var total = zero;
       var reachable = 0;
       for (final entry in distances.entries) {
         if (entry.key == s) continue;
-        if (compareFn(entry.value, zero) == 0) {
+        if (alg.compare(entry.value, zero) == 0) {
           continue; // unreachable / zero-weight
         }
-        total = addFn(total, entry.value);
+        total = alg.add(total, entry.value);
         reachable++;
       }
 
-      if (reachable == 0 || compareFn(total, zero) == 0) {
+      final totalD = alg.toDouble(total);
+      if (reachable == 0 || totalD == 0.0) {
         scores[s] = 0.0;
       } else {
-        scores[s] = (n - 1) / total;
+        scores[s] = (n - 1) / totalD;
       }
     }
     return scores;
@@ -205,32 +198,28 @@ abstract final class Centrality {
   /// Time complexity: **O(n · (E log V))**.
   static Map<int, double> harmonic<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
     final n = nodes.length;
     if (n <= 1) return {for (final v in nodes) v: 0.0};
 
-    final compareFn = compare ?? defaultCompare;
     final denom = (n - 1).toDouble();
     final scores = <int, double>{};
+    final zero = alg.zero;
 
     for (final s in nodes) {
-      final distances = Dijkstra.singleSourceDistances(
-        graph,
-        s,
-        zero: zero,
-        add: add,
-        compare: compare,
-      );
+      final distances = Dijkstra.singleSourceDistances(graph, s, algebra: alg);
 
       var sum = 0.0;
       for (final entry in distances.entries) {
         if (entry.key == s) continue;
-        if (compareFn(entry.value, zero) == 0) continue;
-        sum += 1.0 / entry.value;
+        if (alg.compare(entry.value, zero) == 0) continue;
+        final d = alg.toDouble(entry.value);
+        if (d != 0.0) {
+          sum += 1.0 / d;
+        }
       }
       scores[s] = sum / denom;
     }
@@ -253,29 +242,22 @@ abstract final class Centrality {
   /// For undirected graphs the raw scores are halved because every
   /// shortest path is counted twice (once in each direction).
   ///
-  /// Custom semirings may be supplied via [zero], [add] and [compare].
+  /// Custom edge-weight semantics may be supplied via [algebra].
   ///
   /// Time complexity: **O(n · (E log V))** for weighted graphs,
   /// **O(n · E)** for unweighted graphs.
   static Map<int, double> betweenness<N, E>(
     WeightedWalkable<N, E> graph, {
-    double zero = 0.0,
-    double Function(double, double)? add,
-    int Function(double, double)? compare,
+    WeightAlgebra<E>? algebra,
   }) {
+    final alg = resolveAlgebra<E>(algebra);
     final nodes = graph.nodeIds.toList();
     final n = nodes.length;
     if (n <= 1) return {for (final v in nodes) v: 0.0};
 
     final scores = <int, double>{};
     for (final s in nodes) {
-      final discovery = Brandes.runDiscovery(
-        graph,
-        s,
-        zero: zero,
-        add: add,
-        compare: compare,
-      );
+      final discovery = Brandes.runDiscovery(graph, s, algebra: alg);
       final deltas = Brandes.accumulateNodeDependencies(discovery);
       for (final entry in deltas.entries) {
         if (entry.key == s) continue; // exclude self-dependency

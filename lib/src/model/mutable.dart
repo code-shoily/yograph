@@ -1,5 +1,5 @@
-import 'traversable.dart';
-import 'queryable.dart';
+import 'graph_kind.dart';
+import 'roles.dart';
 
 /// Contract for graphs that can be modified in-place.
 ///
@@ -7,7 +7,7 @@ import 'queryable.dart';
 /// `add_edge_ensure`).  If you need strict behaviour, check [hasNode] first.
 ///
 /// Node IDs are strictly `int`.
-abstract interface class Mutable<N, E> implements Traversable, Queryable<N, E> {
+abstract interface class Mutable<N, E> implements WeightedWalkable<N, E> {
   /// Add a node with identifier [id] and optional [data].
   ///
   /// If [id] already exists its data is overwritten.
@@ -28,6 +28,9 @@ abstract interface class Mutable<N, E> implements Traversable, Queryable<N, E> {
   /// Does nothing if the edge does not exist.
   void removeEdge(int from, int to);
 }
+
+/// Function signature for creating custom mutable graph instances.
+typedef GraphCreator<N, E> = Mutable<N, E> Function(GraphKind kind);
 
 /// Helper methods for bulk creation and insertion of nodes and edges.
 extension MutableBulkCreationX<N, E> on Mutable<N, E> {

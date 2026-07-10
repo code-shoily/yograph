@@ -10,6 +10,13 @@ import 'community_result.dart';
 /// An improvement over the Louvain algorithm that guarantees well-connected
 /// communities by adding a refinement step between local optimization and
 /// aggregation.
+///
+/// **Graph Assumptions:**
+/// - This algorithm assumes and is designed for **undirected graphs**.
+/// - If a directed graph is passed, it will be treated as undirected. Specifically,
+///   all edges are treated as undirected, and the aggregation step collapses edges
+///   between communities symmetrically, returning an undirected representation of the
+///   aggregated graph.
 abstract final class Leiden {
   const Leiden._();
 
