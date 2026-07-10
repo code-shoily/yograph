@@ -1,5 +1,5 @@
 import '../builder/grid_graph.dart';
-import '../simple_graph.dart';
+import '../model/queryable.dart';
 
 /// ASCII and Unicode art visualization for grid graphs.
 ///
@@ -145,7 +145,7 @@ abstract final class AsciiRenderer {
   }
 
   static bool _hasVerticalWall(
-    SimpleGraph<dynamic, dynamic> graph,
+    Queryable<dynamic, dynamic> graph,
     int rows,
     int cols,
     int r,
@@ -160,7 +160,7 @@ abstract final class AsciiRenderer {
   }
 
   static bool _hasHorizontalWall(
-    SimpleGraph<dynamic, dynamic> graph,
+    Queryable<dynamic, dynamic> graph,
     int rows,
     int cols,
     int r,
@@ -175,7 +175,7 @@ abstract final class AsciiRenderer {
   }
 
   static String _getUnicodeIntersection(
-    SimpleGraph<dynamic, dynamic> graph,
+    Queryable<dynamic, dynamic> graph,
     int rows,
     int cols,
     int r,

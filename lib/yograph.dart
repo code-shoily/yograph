@@ -1,4 +1,4 @@
-/// Yograph — a comprehensive graph theory library for Dart.
+/// Yograph — graph algorithms and data structures for Dart.
 library;
 
 // Core model interfaces
@@ -8,6 +8,7 @@ export 'src/model/queryable.dart';
 export 'src/model/reversible.dart';
 export 'src/model/mutable.dart';
 export 'src/model/roles.dart';
+export 'src/model/weight_algebra.dart';
 
 // Result types
 export 'src/path.dart';
@@ -79,3 +80,14 @@ export 'src/builder/grid_builder.dart';
 
 // Rendering
 export 'src/render/ascii.dart';
+export 'src/render/dot.dart';
+export 'src/render/mermaid.dart';
+export 'src/render/svg.dart';
+
+// Generators
+export 'src/generator/classic.dart';
+export 'src/generator/random.dart';
+export 'src/generator/maze.dart';
+
+// I/O
+export 'src/io/graph_io.dart';
