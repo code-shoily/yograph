@@ -21,11 +21,11 @@ For installation and usage examples, see [README.md](README.md).
 
 ## Pathfinding & Shortest Paths
 
-All shortest path algorithms operate on `WeightedWalkable<N, E>` graphs and produce weighted results as `double`.
+Shortest path algorithms operate on `WeightedWalkable<N, E>` graphs. Point-to-point paths and single-source distances preserve the typed accumulated weight `E` through `WeightAlgebra<E>`. Some all-pairs algorithms expose scalar distance matrices via `WeightAlgebra.toDouble`.
 
 | Algorithm | Entry Point | Supports Negative Weights | Negative Cycle Detection | Notes |
 |-----------|-------------|---------------------------|--------------------------|-------|
-| **Dijkstra** | `Dijkstra.shortestPath()`, `Dijkstra.singleSourceDistances()`, `Dijkstra.widestPath()` | No | No | Uses a binary heap priority queue; optional custom `add`/`compare` semiring. |
+| **Dijkstra** | `Dijkstra.shortestPath()`, `Dijkstra.singleSourceDistances()`, `Dijkstra.widestPath()` | No | No | Uses a binary heap priority queue; optional `WeightAlgebra<E>` for custom edge-weight semantics. |
 | **A\*** | `AStar.aStar()`, `AStar.implicitAStar()`, `AStar.implicitAStarBy()` | No | No | Admissible heuristic required for optimality; implicit variants build neighbors on demand. |
 | **Bellman-Ford** | `BellmanFord.shortestPath()` | Yes | Yes | Returns success path, negative-cycle, or unreachable result. |
 | **Floyd-Warshall** | `FloydWarshall.allPairs()` | Yes | Yes | Dense APSP; returns full distance matrix. |
@@ -168,7 +168,7 @@ All community algorithms operate on `Bidirectional<N, E>` graphs and return eith
 |-----------|-------------|--------|------------|-------|
 | **Louvain** | `Community.louvain()`, `Louvain.detect()` | `CommunityResult` | `O(E × iterations)` typical | Modularity optimization with local moving + aggregation. |
 | **Leiden** | `Community.leiden()`, `Leiden.detect()` | `CommunityResult` | `O(E × iterations)` typical | Louvain with refinement phase for well-connected communities. |
-| **Label Propagation** | `Community.labelPropagation()`, `LabelPropagation.detect()` | `CommunityResult` | `O(E × iterations)` | Fast, near-linear asynchronous label updates. |
+| **Label Propagation** | `Community.labelPropagation()`, `LabelPropagation.detect()` | `CommunityResult` | `O(E × iterations)` | Asynchronous label updates. |
 | **Walktrap** | `Community.walktrap()`, `Walktrap.detect()` | `CommunityResult` | `O(V² log V)` hierarchical | Random-walk distance + agglomerative clustering. |
 | **Modularity** | `Community.modularity()`, `CommunityMetrics.modularity()` | `double` | `O(V + E)` | Quality score for a partition; undirected and directed support. |
 | **Clustering Coefficient** | `Community.clusteringCoefficient()` | `double` (per node) | `O(deg(v)²)` | Watts-Strogatz local clustering. |

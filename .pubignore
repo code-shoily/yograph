@@ -4,3 +4,4 @@ example/aoc/
 # Exclude coverage reports, scratch files, and dev artifacts
 coverage/
 bin/
+analysis_output.txt

@@ -8,10 +8,12 @@
 [![pub package](https://img.shields.io/pub/v/yograph.svg)](https://pub.dev/packages/yograph)
 [![Dart CI](https://github.com/code-shoily/yograph/actions/workflows/dart.yml/badge.svg)](https://github.com/code-shoily/yograph/actions/workflows/dart.yml)
 
-Yograph is a graph theory library for Dart. It provides graph algorithms and data structures through capability-based interfaces.
+Yograph is a pure Dart graph algorithms and data structures library. It supports directed and undirected graphs, weighted graphs, traversal, shortest paths, minimum spanning trees, network flow, centrality, community detection, DAG algorithms, graph generators, I/O, and rendering.
 
-**[YogEx](https://github.com/code-shoily/yog_ex)** — Elixir implementation with a superset of features.  
-**[Yog](https://github.com/code-shoily/yog)** — Gleam implementation with a functional, typed API.
+Algorithms operate on capability-based interfaces, so custom graph representations can plug into the same APIs.
+
+**[YogEx](https://github.com/code-shoily/yog_ex)** — Elixir implementation.  
+**[Yog](https://github.com/code-shoily/yog)** — Gleam implementation.
 
 ## Features
 
@@ -24,12 +26,12 @@ Yograph includes algorithms for the following areas:
 **Bellman-Ford** — `BellmanFord.shortestPath()`, negative cycle detection  
 **Floyd-Warshall** — `FloydWarshall.allPairs()`, all-pairs shortest paths  
 **Johnson** — `Johnson.allPairs()`, all-pairs shortest paths with negative weights (no negative cycles)  
-**Bidirectional Dijkstra** — `BidirectionalDijkstra.shortestPath()`, faster single-pair search  
+**Bidirectional Dijkstra** — `BidirectionalDijkstra.shortestPath()`, single-pair shortest path search
 **Bidirectional BFS** — `BidirectionalBfs.shortestPath()`, fewest-edge single-pair search  
 **Yen's K-Shortest** — `Yen.kShortestPaths()`, up to [k] shortest loopless paths  
 **Widest Path** — `Dijkstra.widestPath()`, maximum bottleneck routing  
 
-All pathfinding algorithms support custom semirings via optional `add` and `compare` callbacks.
+Weighted algorithms support custom edge-weight semantics through `WeightAlgebra<E>`. Built-in algebras cover common numeric weights (`double` and `int`), while custom algebras let algorithms work with domain-specific edge data.
 
 ### Traversal
 
@@ -44,7 +46,7 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 **Strongly Connected Components** — `SCC.tarjan()`, `SCC.kosaraju()`  
 **Bridge & Articulation Point Detection** — `Analysis.analyze()`  
 **K-Core Decomposition** — `KCore.detect()`, `KCore.coreNumbers()`, `KCore.degeneracy()`  
-**Reachability Counts** — `Reachability.counts()` with DAG fast-path + SCC condensation fallback  
+**Reachability Counts** — `Reachability.counts()` with DAG and SCC condensation implementations
 **Structural Predicates** — `Structure.isTree()`, `Structure.isChordal()`, `Structure.isArborescence()`, `Structure.isComplete()`, `Structure.isRegular()`
 
 ### Centrality
@@ -100,6 +102,7 @@ All pathfinding algorithms support custom semirings via optional `add` and `comp
 **Capability-Based Interfaces** — `Traversable`, `Queryable`, `Mutable`, `Reversible` combine into roles such as `Walkable`, `WeightedWalkable`, and `Bidirectional`.  
 **Labeled Builder** — `LabeledBuilder` maps string/enum labels to internal `int` node IDs.  
 **Strategy Pattern** — `Pathfinding.shortestPath()` accepts `PointToPointStrategy` implementations.  
+**Weight Algebra** — `WeightAlgebra<E>` lets weighted algorithms interpret custom edge data types.  
 **Disjoint Set** — `DisjointSet` with path compression and union by rank.
 
 ## Installation
@@ -108,7 +111,7 @@ Add yograph to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  yograph: ^0.1.0
+  yograph: ^0.5.0
 ```
 
 Or via command line:
@@ -133,7 +136,7 @@ void main() {
 
   // Find shortest path (default: Dijkstra)
   final path = Pathfinding.shortestPath(graph, 0, 3);
-  print(path); // Path(0 -> 2 -> 1 -> 3, weight: 8.0)
+  print(path); // Path(0 -> 2 -> 1 -> 3, weight: 8)
 
   // Use A* with a heuristic
   final astarPath = Pathfinding.shortestPath(
@@ -142,7 +145,7 @@ void main() {
     3,
     strategy: AStar(heuristic: (node, goal) => (goal - node).abs().toDouble()),
   );
-  print(astarPath); // Path(0 -> 2 -> 1 -> 3, weight: 8.0)
+  print(astarPath); // Path(0 -> 2 -> 1 -> 3, weight: 8)
 
   // Bellman-Ford handles negative weights
   final bfGraph = SimpleGraph<String, int>.directed()
@@ -153,7 +156,7 @@ void main() {
 
   final result = BellmanFord.shortestPath(bfGraph, 0, 3);
   if (result.isSuccess) {
-    print(result.path); // Path(0 -> 1 -> 2 -> 3, weight: -1.0)
+    print(result.path); // Path(0 -> 1 -> 2 -> 3, weight: -1)
   } else if (result.hasNegativeCycle) {
     print('Negative cycle detected!');
   }
@@ -169,7 +172,7 @@ void main() {
     ..addEdge(1, 2, data: 3);
 
   final mst = MST.kruskal(undirected);
-  print(mst.totalWeight); // 4.0
+  print(mst.totalWeight); // 4
 
   // Centrality
   final scores = Centrality.betweenness(undirected);
@@ -195,7 +198,7 @@ final builder = LabeledBuilder<String, int>.directed()
 
 final graph = builder.toGraph();
 final path = Pathfinding.shortestPath(graph, builder.getId('A')!, builder.getId('B')!);
-print(path); // Path(0 -> 2 -> 1, weight: 3.0)
+print(path); // Path(0 -> 2 -> 1, weight: 3)
 ```
 
 ### Connectivity & Structure
