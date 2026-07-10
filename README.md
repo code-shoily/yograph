@@ -111,7 +111,7 @@ Add yograph to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  yograph: ^0.5.0
+  yograph: ^0.5.1
 ```
 
 Or via command line:
@@ -176,14 +176,14 @@ void main() {
 
   // Centrality
   final scores = Centrality.betweenness(undirected);
-  print(scores); // {0: 0.0, 1: 0.0, 2: 0.0}
+  print(scores); // betweenness centrality by node ID
 
   // Health metrics
-  print(Health.diameter(undirected)); // 1.0
+  print(Health.diameter(undirected)); // weighted graph diameter
   print(Health.assortativity(undirected)); // 0.0 (all same degree)
 
   // Connectivity
-  print(Components.connectedComponents(undirected)); // [[0, 1, 2]]
+  print(Components.connectedComponents(undirected)); // one component containing 0, 1, 2
   print(Structure.isTree(undirected)); // false (has a cycle)
 }
 ```
@@ -222,10 +222,10 @@ final directed = SimpleGraph<String, void>.directed()
   ..addEdge(2, 0)
   ..addEdge(2, 3);
 
-print(SCC.tarjan(directed)); // [[3], [0, 1, 2]]
+print(SCC.tarjan(directed)); // strongly connected components
 
 // K-core decomposition
-print(KCore.coreNumbers(graph)); // {0: 2, 1: 2, 2: 2, 3: 1}
+print(KCore.coreNumbers(graph)); // core number by node ID
 
 // Structural predicates
 print(Structure.isChordal(graph)); // true
@@ -292,7 +292,7 @@ final bipartite = SimpleGraph<String, void>.undirected()
   ..addEdge(1, 4)
   ..addEdge(2, 5);
 
-print(Matching.hopcroftKarp(bipartite)); // {0: 3, 1: 4, 2: 5}
+print(Matching.hopcroftKarp(bipartite)); // maximum bipartite matching
 
 // Weighted bipartite matching (Hungarian / Kuhn-Munkres)
 final weighted = SimpleGraph<String, int>.undirected()
@@ -301,9 +301,9 @@ final weighted = SimpleGraph<String, int>.undirected()
   ..addEdge(1, 2, data: 2)
   ..addEdge(1, 3, data: 3);
 
-final result = Matching.hungarian(weighted, optimization: Optimization.min);
+final result = Matching.hungarian(weighted, optimization: HungarianOptimization.min);
 print(result.cost);      // 4.0
-print(result.matching);  // {0: 2, 1: 3}
+print(result.matching);  // bidirectional matching map
 
 // General graph maximum matching (Edmonds' blossom)
 final general = SimpleGraph<String, void>.undirected()
@@ -312,7 +312,7 @@ final general = SimpleGraph<String, void>.undirected()
   ..addEdge(2, 0)
   ..addEdge(2, 3);
 
-print(Matching.blossomMaximumMatching(general)); // {0: 1, 1: 0, 2: 3, 3: 2}
+print(Matching.blossomMaximumMatching(general)); // maximum general matching
 ```
 
 ## Development
