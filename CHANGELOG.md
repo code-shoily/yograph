@@ -1,3 +1,10 @@
+## 0.5.1 - 2026-07-10
+
+### Package Metadata
+
+- Add `example/main.dart` so pub.dev recognizes the package example.
+- Point package documentation metadata to the generated pub.dev API docs.
+
 ## 0.5.0 - 2026-07-10
 
 ### Weight Algebra

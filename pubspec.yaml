@@ -1,9 +1,9 @@
 name: yograph
 description: "Graph algorithms and data structures for Dart: shortest paths, traversal, MST, flow, centrality, community detection, DAGs, and rendering."
-version: 0.5.0
+version: 0.5.1
 repository: https://github.com/code-shoily/yograph
 issue_tracker: https://github.com/code-shoily/yograph/issues
-documentation: https://github.com/code-shoily/yograph#readme
+documentation: https://pub.dev/documentation/yograph/latest/
 
 topics:
   - graph
